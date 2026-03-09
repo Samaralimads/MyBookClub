@@ -1,0 +1,77 @@
+//
+//  ImageUploadService.swift
+//  MyBookClub
+//
+//  Created by Samara Lima da Silva on 09/03/2026.
+//
+
+import Foundation
+import UIKit
+import Supabase
+
+final class ImageUploadService {
+    static let shared = ImageUploadService()
+    private init() {}
+
+    enum UploadBucket: String {
+        case clubCovers = "club-covers"
+        case avatars    = "avatars"
+    }
+
+    // MARK: - Upload
+
+    func uploadImage(_ image: UIImage, bucket: UploadBucket, path: String) async throws -> String {
+        guard let compressed = compress(image: image, maxKB: 900) else {
+            throw AppError("Failed to compress image")
+        }
+
+        let storage = SupabaseService.shared.client.storage.from(bucket.rawValue)
+        try await storage.upload(
+            path,
+            data: compressed,
+            options: FileOptions(contentType: "image/jpeg", upsert: true)
+        )
+
+        let publicURL = try storage.getPublicURL(path: path)
+        return publicURL.absoluteString
+    }
+
+    func uploadClubCover(_ image: UIImage, clubId: UUID) async throws -> String {
+        let path = "\(clubId.uuidString)/cover.jpg"
+        return try await uploadImage(image, bucket: .clubCovers, path: path)
+    }
+
+    func uploadAvatar(_ image: UIImage) async throws -> String {
+        guard let uid = SupabaseService.shared.currentUserID else {
+            throw AppError("Not signed in")
+        }
+        let path = "\(uid.uuidString)/avatar.jpg"
+        return try await uploadImage(image, bucket: .avatars, path: path)
+    }
+
+    // MARK: - Compression
+
+    private func compress(image: UIImage, maxKB: Int) -> Data? {
+        // Resize to max 1024px on longer side
+        let maxDimension: CGFloat = 1024
+        let size = image.size
+        let scale = min(maxDimension / max(size.width, size.height), 1.0)
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resized = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+
+        // JPEG compression
+        var quality: CGFloat = 0.85
+        while quality > 0.1 {
+            if let data = resized.jpegData(compressionQuality: quality),
+               data.count <= maxKB * 1024 {
+                return data
+            }
+            quality -= 0.1
+        }
+        return resized.jpegData(compressionQuality: 0.1)
+    }
+}

@@ -1,0 +1,33 @@
+//
+//  MeetingsView.swift
+//  MyBookClub
+//
+//  Created by Samara Lima da Silva on 09/03/2026.
+//
+
+import SwiftUI
+
+struct MeetingsView: View {
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+            VStack(spacing: Spacing.lg) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 48))
+                    .foregroundColor(.accent)
+                Text("Meetings")
+                    .font(.appTitle)
+                    .foregroundColor(.inkPrimary)
+                Text("Cross-club meeting list coming in Part 3")
+                    .font(.appBody)
+                    .foregroundColor(.inkSecondary)
+            }
+        }
+        .navigationTitle("Meetings")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview {
+    MeetingsView()
+}
