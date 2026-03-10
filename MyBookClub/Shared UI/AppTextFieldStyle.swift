@@ -13,7 +13,7 @@ struct AppTextFieldStyle: TextFieldStyle {
             .font(.appBody)
             .foregroundColor(.inkPrimary)
             .padding(Spacing.md)
-            .background(Color.appSurface)
+            .background(Color.cardBackground)
             .cornerRadius(CornerRadius.button)
             .overlay(
                 RoundedRectangle(cornerRadius: CornerRadius.button)

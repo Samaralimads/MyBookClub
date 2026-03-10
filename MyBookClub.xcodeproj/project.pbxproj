@@ -18,6 +18,7 @@
 		BDE4EDE12F5F49F0004BF3B6 /* Exceptions for "MyBookClub" folder in "MyBookClub" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				.gitignore,
 				Info.plist,
 			);
 			target = BDE4ED522F5F22F3004BF3B6 /* MyBookClub */;

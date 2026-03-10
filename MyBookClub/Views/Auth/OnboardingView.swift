@@ -13,14 +13,14 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color.appBackground.ignoresSafeArea()
+            Color.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Progress dots
                 HStack(spacing: Spacing.sm) {
                     ForEach(OnboardingViewModel.OnboardingStep.allCases, id: \.rawValue) { step in
                         Circle()
-                            .fill(step.rawValue <= vm.currentStep.rawValue ? Color.accent : Color.border)
+                            .fill(step.rawValue <= vm.currentStep.rawValue ? Color.accentColor : Color.border)
                             .frame(width: 8, height: 8)
                             .animation(Animations.standard, value: vm.currentStep)
                     }
@@ -231,10 +231,10 @@ private struct GenreChip: View {
             .padding(.vertical, Spacing.sm)
             .padding(.horizontal, Spacing.md)
             .frame(maxWidth: .infinity)
-            .background(isSelected ? Color.accentSubtle : Color.appSurface)
+            .background(isSelected ? Color.accentSubtle : Color.cardBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
-                    .stroke(isSelected ? Color.accent : Color.border, lineWidth: 1.5)
+                    .stroke(isSelected ? Color.accentColor : Color.border, lineWidth: 1.5)
             )
             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.button))
         }
@@ -274,11 +274,11 @@ private struct ReadingFreqStep: View {
                             }
                         }
                         .padding(Spacing.lg)
-                        .background(vm.readingFreq == freq ? Color.accentSubtle : Color.appSurface)
+                        .background(vm.readingFreq == freq ? Color.accentSubtle : Color.cardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
                         .overlay(
                             RoundedRectangle(cornerRadius: CornerRadius.card)
-                                .stroke(vm.readingFreq == freq ? Color.accent : Color.border, lineWidth: 1.5)
+                                .stroke(vm.readingFreq == freq ? Color.accentColor : Color.border, lineWidth: 1.5)
                         )
                     }
                     .animation(Animations.standard, value: vm.readingFreq)

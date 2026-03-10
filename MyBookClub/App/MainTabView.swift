@@ -45,7 +45,7 @@ struct MainTabView: View {
             .tag(AppTab.profile)
         }
         .tint(.accent)
-        .toolbarBackground(Color.appSurface, for: .tabBar)
+        .toolbarBackground(Color.cardBackground, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
     }
 }

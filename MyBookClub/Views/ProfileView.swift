@@ -12,7 +12,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Color.appBackground.ignoresSafeArea()
+            Color.background.ignoresSafeArea()
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "person.fill")
                     .font(.system(size: 48))

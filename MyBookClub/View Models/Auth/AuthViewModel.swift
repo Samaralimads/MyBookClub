@@ -34,6 +34,14 @@ final class AuthViewModel {
     // MARK: - Supabase Auth Listener
 
     func startListening() async {
+        // Check current session immediately on launch
+        if SupabaseService.shared.client.auth.currentSession != nil {
+            await checkOnboardingStatus()
+        } else {
+            authState = .unauthenticated
+        }
+        
+        // Then listen for future changes
         for await (event, _) in SupabaseService.shared.client.auth.authStateChanges {
             switch event {
             case .signedIn:

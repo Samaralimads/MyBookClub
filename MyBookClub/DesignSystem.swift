@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 
-
 // MARK: - Spacing
 
 enum Spacing {
@@ -58,7 +57,7 @@ enum Animations {
 struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background(Color.appSurface)
+            .background(Color.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
             .overlay(
                 RoundedRectangle(cornerRadius: CornerRadius.card)
@@ -93,7 +92,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .padding(.horizontal, Spacing.xl)
             .background(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
-                    .fill(Color.accent.opacity(configuration.isPressed ? 0.7 : 1.0))
+                    .fill(Color.accentColor.opacity(configuration.isPressed ? 0.7 : 1.0))
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(Animations.fade, value: configuration.isPressed)
@@ -109,7 +108,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, Spacing.xl)
             .background(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
-                    .stroke(Color.accent, lineWidth: 1.5)
+                    .stroke(Color.accentColor, lineWidth: 1.5)
             )
             .opacity(configuration.isPressed ? 0.7 : 1.0)
             .animation(Animations.fade, value: configuration.isPressed)

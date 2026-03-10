@@ -25,7 +25,7 @@ struct ErrorBanner: View {
             }
         }
         .padding(Spacing.md)
-        .background(Color.appSurface)
+        .background(Color.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
         .shadow(color: .black.opacity(0.3), radius: 8)
     }

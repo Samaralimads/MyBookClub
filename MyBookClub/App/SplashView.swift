@@ -10,7 +10,7 @@ import SwiftUI
 struct SplashView: View {
     var body: some View {
         ZStack {
-            Color.appBackground.ignoresSafeArea()
+            Color.background.ignoresSafeArea()
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "book.closed.fill")
                     .font(.system(size: 56))

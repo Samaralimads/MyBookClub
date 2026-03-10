@@ -16,7 +16,12 @@ final class SupabaseService {
     private init() {
         client = SupabaseClient(
             supabaseURL: URL(string: Config.supabaseURL)!,
-            supabaseKey: Config.supabaseAnonKey  // anon key ONLY — never service_role in app
+            supabaseKey: Config.supabaseAnonKey,
+            options: SupabaseClientOptions(
+                auth: SupabaseClientOptions.AuthOptions(
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
     }
 
@@ -248,7 +253,7 @@ final class SupabaseService {
     func fetchUpcomingMeetingsForUser() async throws -> [Meeting] {
         guard let uid = currentUserID else { return [] }
         return try await client
-            .rpc("get_user_meetings", params: ["p_user_id": .string(uid.uuidString)])
+            .rpc("get_user_meetings", params: ["p_user_id": uid.uuidString])
             .execute()
             .value
     }

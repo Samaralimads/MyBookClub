@@ -15,7 +15,7 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            Color.appBackground.ignoresSafeArea()
+            Color.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()

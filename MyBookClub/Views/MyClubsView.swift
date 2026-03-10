@@ -10,7 +10,7 @@ import SwiftUI
 struct MyClubsView: View {
     var body: some View {
         ZStack {
-            Color.appBackground.ignoresSafeArea()
+            Color.background.ignoresSafeArea()
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "books.vertical.fill")
                     .font(.system(size: 48))

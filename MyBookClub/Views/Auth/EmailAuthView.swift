@@ -18,7 +18,7 @@ struct EmailAuthView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
+                Color.background.ignoresSafeArea()
 
                 VStack(spacing: Spacing.xl) {
                     VStack(spacing: Spacing.md) {
@@ -83,7 +83,7 @@ struct EmailAuthView: View {
                 }
             }
         }
-        .presentationBackground(Color.appBackground)
+        .presentationBackground(Color.background)
         .onChange(of: authVM.authState) { _, newState in
             if newState != .unauthenticated {
                 dismiss()
