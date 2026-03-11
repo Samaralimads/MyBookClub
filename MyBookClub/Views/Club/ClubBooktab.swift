@@ -16,7 +16,7 @@ struct ClubBookTab: View {
             if let book = club.currentBook {
                 Text("Reading Now")
                     .font(.appHeadline)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
 
                 HStack(spacing: Spacing.lg) {
                     AsyncImage(url: book.displayCoverURL) { image in
@@ -31,20 +31,20 @@ struct ClubBookTab: View {
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         Text(book.title)
                             .font(.appHeadline)
-                            .foregroundColor(.inkPrimary)
+                            .foregroundStyle(.inkPrimary)
                         Text(book.author)
                             .font(.appBody)
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
                     }
                 }
             } else {
                 VStack(spacing: Spacing.md) {
                     Image(systemName: "book.closed")
                         .font(.system(size: 36))
-                        .foregroundColor(.inkTertiary)
+                        .foregroundStyle(.inkTertiary)
                     Text("No book selected yet")
                         .font(.appBody)
-                        .foregroundColor(.inkSecondary)
+                        .foregroundStyle(.inkSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.xxl)

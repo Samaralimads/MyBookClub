@@ -24,13 +24,13 @@ struct AuthInputField: View {
             // Label
             Text(label)
                 .font(.appCaption.weight(.medium))
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
 
             // Field row
             HStack(spacing: Spacing.sm) {
                 Image(systemName: icon)
                     .font(.system(size: 15))
-                    .foregroundColor(.inkTertiary)
+                    .foregroundStyle(.inkTertiary)
                     .frame(width: 18)
 
                 if isSecure, let showBinding = showSecure {
@@ -42,7 +42,7 @@ struct AuthInputField: View {
                         }
                     }
                     .font(.appBody)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                     .autocorrectionDisabled()
                     .autocapitalization(.none)
 
@@ -51,12 +51,12 @@ struct AuthInputField: View {
                     } label: {
                         Image(systemName: showBinding.wrappedValue ? "eye.slash" : "eye")
                             .font(.system(size: 15))
-                            .foregroundColor(.inkTertiary)
+                            .foregroundStyle(.inkTertiary)
                     }
                 } else {
                     TextField(placeholder, text: $text)
                         .font(.appBody)
-                        .foregroundColor(.inkPrimary)
+                        .foregroundStyle(.inkPrimary)
                         .keyboardType(keyboardType)
                         .autocorrectionDisabled()
                         .autocapitalization(.none)
@@ -65,7 +65,7 @@ struct AuthInputField: View {
             .padding(.vertical, Spacing.md)
             .padding(.horizontal, Spacing.md)
             .background(Color.cardBackground)
-            .cornerRadius(CornerRadius.button)
+            .clipShape(.rect(cornerRadius: CornerRadius.button))
             .overlay(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
                     .stroke(
@@ -82,7 +82,7 @@ struct AuthInputField: View {
                     Text(error)
                         .font(.appCaption)
                 }
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -116,7 +116,7 @@ struct PasswordStrengthView: View {
             }
             Text(label)
                 .font(.appCaption)
-                .foregroundColor(color)
+                .foregroundStyle(color)
         }
         .animation(Animations.standard, value: strength)
     }
@@ -130,7 +130,7 @@ struct AuthDivider: View {
             Rectangle().fill(Color.border).frame(height: 1)
             Text("or")
                 .font(.appCaption)
-                .foregroundColor(.inkTertiary)
+                .foregroundStyle(.inkTertiary)
             Rectangle().fill(Color.border).frame(height: 1)
         }
     }

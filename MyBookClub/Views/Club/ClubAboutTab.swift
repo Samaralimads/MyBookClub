@@ -17,10 +17,10 @@ struct ClubAboutTab: View {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Description")
                         .font(.appHeadline)
-                        .foregroundColor(.inkPrimary)
+                        .foregroundStyle(.inkPrimary)
                     Text(description)
                         .font(.appBody)
-                        .foregroundColor(.inkSecondary)
+                        .foregroundStyle(.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -28,7 +28,7 @@ struct ClubAboutTab: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Members")
                     .font(.appHeadline)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                 MemberAvatarStack(count: club.memberCount ?? 0)
             }
 
@@ -36,37 +36,34 @@ struct ClubAboutTab: View {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Meeting Schedule")
                         .font(.appHeadline)
-                        .foregroundColor(.inkPrimary)
+                        .foregroundStyle(.inkPrimary)
                     HStack(spacing: Spacing.sm) {
                         Image(systemName: "calendar")
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.accent)
                         Text(day.capitalized)
                             .font(.appBody)
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
                         if let time = club.recurringTime {
                             Text("· \(time)")
                                 .font(.appBody)
-                                .foregroundColor(.inkSecondary)
+                                .foregroundStyle(.inkSecondary)
                         }
                     }
                 }
             }
-
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("Genres")
                     .font(.appHeadline)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                 HStack(spacing: Spacing.sm) {
-                    ForEach(club.genreTags, id: \.self) { tag in
-                        if let genre = Genre(rawValue: tag) {
-                            Text(genre.label)
-                                .font(.appCaption.weight(.semibold))
-                                .foregroundColor(.accentColor)
-                                .padding(.horizontal, Spacing.md)
-                                .padding(.vertical, Spacing.xs)
-                                .background(Color.accentSubtle)
-                                .clipShape(Capsule())
-                        }
+                    ForEach(club.genreTags.compactMap { Genre(rawValue: $0) }, id: \.rawValue) { genre in
+                        Text(genre.label)
+                            .font(.appCaption.weight(.semibold))
+                            .foregroundStyle(.accent)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.xs)
+                            .background(Color.accentSubtle)
+                            .clipShape(Capsule())
                     }
                 }
             }
@@ -95,7 +92,7 @@ struct MemberAvatarStack: View {
                     .fill(Color.purpleTint)
                     .overlay(
                         Image(systemName: "person.fill")
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.accent)
                             .font(.system(size: 16))
                     )
                     .overlay(Circle().stroke(Color.background, lineWidth: 2))
@@ -108,7 +105,7 @@ struct MemberAvatarStack: View {
                     .overlay(
                         Text("+\(count - visibleCount)")
                             .font(.appCaption.weight(.semibold))
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
                     )
                     .overlay(Circle().stroke(Color.background, lineWidth: 2))
                     .frame(width: size, height: size)

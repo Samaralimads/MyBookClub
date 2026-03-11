@@ -14,13 +14,13 @@ struct MeetingsView: View {
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "calendar")
                     .font(.system(size: 48))
-                    .foregroundColor(.accent)
+                    .foregroundStyle(.accent)
                 Text("Meetings")
                     .font(.appTitle)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                 Text("Cross-club meeting list coming in Part 3")
                     .font(.appBody)
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
             }
         }
         .navigationTitle("Meetings")

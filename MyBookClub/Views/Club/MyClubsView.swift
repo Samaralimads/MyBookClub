@@ -14,13 +14,13 @@ struct MyClubsView: View {
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "books.vertical.fill")
                     .font(.system(size: 48))
-                    .foregroundColor(.accent)
+                    .foregroundStyle(.accent)
                 Text("My Clubs")
                     .font(.appTitle)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                 Text("Club management coming in Part 2")
                     .font(.appBody)
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
             }
         }
         .navigationTitle("My Clubs")

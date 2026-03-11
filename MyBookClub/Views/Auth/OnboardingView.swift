@@ -64,7 +64,7 @@ struct OnboardingView: View {
                     if let error = vm.error {
                         Text(error.message)
                             .font(.appCaption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                     }
                 }
                 .padding(.horizontal, Spacing.xl)
@@ -94,9 +94,9 @@ private struct GenrePickerStep: View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("What do you love reading?")
-                    .font(.appTitle).foregroundColor(.inkPrimary)
+                    .font(.appTitle).foregroundStyle(.inkPrimary)
                 Text("Pick up to 5 genres to find clubs that match your taste.")
-                    .font(.appBody).foregroundColor(.inkSecondary)
+                    .font(.appBody).foregroundStyle(.inkSecondary)
             }
             FlowLayout(spacing: Spacing.sm) {
                 ForEach(genres, id: \.self) { genre in
@@ -105,7 +105,7 @@ private struct GenrePickerStep: View {
                     } label: {
                         Text(genre)
                             .font(.appCaption)
-                            .foregroundColor(vm.selectedGenres.contains(genre) ? .white : .inkPrimary)
+                            .foregroundStyle(vm.selectedGenres.contains(genre) ? .white : .inkPrimary)
                             .padding(.vertical, Spacing.sm)
                             .padding(.horizontal, Spacing.md)
                             .background(vm.selectedGenres.contains(genre) ? Color.accentColor : Color.cardBackground)
@@ -130,18 +130,18 @@ private struct ReadingFreqStep: View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("How often do you read?")
-                    .font(.appTitle).foregroundColor(.inkPrimary)
+                    .font(.appTitle).foregroundStyle(.inkPrimary)
                 Text("Helps us match you with clubs that suit your pace.")
-                    .font(.appBody).foregroundColor(.inkSecondary)
+                    .font(.appBody).foregroundStyle(.inkSecondary)
             }
             VStack(spacing: Spacing.md) {
                 ForEach(ReadingFrequency.allCases, id: \.rawValue) { freq in
                     Button { vm.readingFreq = freq } label: {
                         HStack {
-                            Text(freq.label).font(.appBody).foregroundColor(.inkPrimary)
+                            Text(freq.label).font(.appBody).foregroundStyle(.inkPrimary)
                             Spacer()
                             if vm.readingFreq == freq {
-                                Image(systemName: "checkmark.circle.fill").foregroundColor(.accent)
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.accent)
                             }
                         }
                         .padding(Spacing.lg)
@@ -173,18 +173,18 @@ private struct LocationStep: View {
             ZStack {
                 Circle().fill(Color.accentSubtle).frame(width: 100, height: 100)
                 Image(systemName: granted ? "location.fill" : "location.circle")
-                    .font(.system(size: 44)).foregroundColor(.accent)
+                    .font(.system(size: 44)).foregroundStyle(.accent)
             }
             VStack(spacing: Spacing.sm) {
                 Text("Find clubs near you")
-                    .font(.appTitle).foregroundColor(.inkPrimary).multilineTextAlignment(.center)
+                    .font(.appTitle).foregroundStyle(.inkPrimary).multilineTextAlignment(.center)
                 Text("We use city-level location only to show you nearby clubs.")
-                    .font(.appBody).foregroundColor(.inkSecondary).multilineTextAlignment(.center)
+                    .font(.appBody).foregroundStyle(.inkSecondary).multilineTextAlignment(.center)
             }
             if granted {
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                    Text("Location enabled").font(.appBody).foregroundColor(.inkPrimary)
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("Location enabled").font(.appBody).foregroundStyle(.inkPrimary)
                 }
                 .padding(Spacing.md)
                 .background(Color.cardBackground)

@@ -11,10 +11,10 @@ struct AppTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
             .font(.appBody)
-            .foregroundColor(.inkPrimary)
+            .foregroundStyle(.inkPrimary)
             .padding(Spacing.md)
             .background(Color.cardBackground)
-            .cornerRadius(CornerRadius.button)
+            .clipShape(.rect(cornerRadius: CornerRadius.button))
             .overlay(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
                     .stroke(Color.border, lineWidth: 1)

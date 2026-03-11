@@ -16,13 +16,13 @@ struct ProfileView: View {
             VStack(spacing: Spacing.lg) {
                 Image(systemName: "person.fill")
                     .font(.system(size: 48))
-                    .foregroundColor(.accent)
+                    .foregroundStyle(.accent)
                 Text("Profile")
                     .font(.appTitle)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                 Text("Full profile + settings coming in Part 4")
                     .font(.appBody)
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
 
                 // Sign out button for testing
                 Button("Sign Out") {
@@ -40,5 +40,5 @@ struct ProfileView: View {
 
 
 #Preview {
-    ProfileView()
+    ProfileView().environment(AuthViewModel())
 }

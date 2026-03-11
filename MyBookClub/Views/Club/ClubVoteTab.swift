@@ -15,12 +15,12 @@ struct ClubVoteTab: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("Next Book Voting")
                 .font(.appHeadline)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
 
             if isMember {
                 Text("Voting coming in Part 3.")
                     .font(.appBody)
-                    .foregroundColor(.inkTertiary)
+                    .foregroundStyle(.inkTertiary)
             } else {
                 membersOnlyBanner
             }
@@ -32,13 +32,13 @@ struct ClubVoteTab: View {
         VStack(spacing: Spacing.md) {
             Image(systemName: "lock.fill")
                 .font(.system(size: 28))
-                .foregroundColor(.accentColor)
+                .foregroundStyle(.accent)
             Text("Members Only")
                 .font(.appHeadline)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
             Text("Join this club to access voting.")
                 .font(.appBody)
-                .foregroundColor(.inkSecondary)
+                .foregroundStyle(.inkSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -48,4 +48,3 @@ struct ClubVoteTab: View {
     }
     
 }
-

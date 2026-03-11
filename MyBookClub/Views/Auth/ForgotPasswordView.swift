@@ -28,23 +28,23 @@ struct ForgotPasswordView: View {
                             .frame(width: 90, height: 90)
                         Image(systemName: "envelope.badge.checkmark")
                             .font(.system(size: 38))
-                            .foregroundColor(.accent)
+                            .foregroundStyle(.accent)
                     }
 
                     VStack(spacing: Spacing.sm) {
                         Text("Check your inbox")
                             .font(.appTitle)
-                            .foregroundColor(.inkPrimary)
+                            .foregroundStyle(.inkPrimary)
                         Text("We've sent a password reset link to **\(email)**. Follow the link in the email to set a new password.")
                             .font(.appBody)
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.horizontal, Spacing.xl)
 
                     Text("Didn't receive it? Check your spam folder, or tap below to try again.")
                         .font(.appCaption)
-                        .foregroundColor(.inkTertiary)
+                        .foregroundStyle(.inkTertiary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, Spacing.xl)
 
@@ -53,7 +53,7 @@ struct ForgotPasswordView: View {
                         email = ""
                     }
                     .font(.appCaption.weight(.semibold))
-                    .foregroundColor(.accent)
+                    .foregroundStyle(.accent)
 
                     Spacer()
 
@@ -72,36 +72,24 @@ struct ForgotPasswordView: View {
                 // Input state
                 VStack(spacing: 0) {
 
-                    // Back button
-                    HStack {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.inkPrimary)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xl)
-
                     // Logo
-                    Image("logo")
+                    Image("Logo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 100)
-                        .padding(.top, Spacing.xl)
-                        .padding(.bottom, Spacing.xxl)
+                        .frame(width: 200)
+                        .padding(.bottom, Spacing.md)
+                    
 
                     // Heading
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text("Forgot password?")
-                            .font(.appTitle)
-                            .foregroundColor(.inkPrimary)
+                            .font(.appHeadline)
+                            .foregroundStyle(.inkPrimary)
+                            .padding(.vertical, Spacing.sm)
                         Text("Enter the email linked to your account and we'll send you a reset link.")
                             .font(.appBody)
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
+                        
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Spacing.xl)
@@ -121,7 +109,7 @@ struct ForgotPasswordView: View {
                     if let error = authVM.error {
                         Text(error.message)
                             .font(.appCaption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, Spacing.xl)
                             .padding(.top, Spacing.sm)
@@ -143,10 +131,8 @@ struct ForgotPasswordView: View {
 
             if authVM.isLoading { LoadingOverlay() }
         }
-        .navigationBarHidden(true)
         .animation(Animations.standard, value: authVM.resetPasswordSent)
         .onDisappear {
-            // Clean up so state is fresh next time
             authVM.resetPasswordSent = false
             authVM.error = nil
         }

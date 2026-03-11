@@ -14,14 +14,14 @@ struct ErrorBanner: View {
     var body: some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
             Text(message)
                 .font(.appCaption)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
             Spacer()
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
             }
         }
         .padding(Spacing.md)
@@ -30,5 +30,3 @@ struct ErrorBanner: View {
         .shadow(color: .black.opacity(0.3), radius: 8)
     }
 }
-
-

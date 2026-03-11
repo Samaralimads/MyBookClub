@@ -20,7 +20,7 @@ struct DiscoverView: View {
                 
                 Text("Discover")
                     .font(.appTitle)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
@@ -60,19 +60,19 @@ struct DiscoverView: View {
     private var searchRow: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.inkTertiary)
+                .foregroundStyle(.inkTertiary)
                 .font(.system(size: 16))
 
             TextField("Search clubs, books, genres...", text: $vm.searchText)
                 .font(.appBody)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
                 .submitLabel(.search)
                 .onSubmit { vm.search() }
 
             if !vm.searchText.isEmpty {
                 Button(action: vm.clearSearch) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.inkTertiary)
+                        .foregroundStyle(.inkTertiary)
                 }
             }
         }
@@ -118,7 +118,7 @@ struct DiscoverView: View {
                 Text(title)
                     .font(.appBody.weight(.medium))
             }
-            .foregroundColor(isSelected ? .inkPrimary : .inkTertiary)
+            .foregroundStyle(isSelected ? .inkPrimary : .inkTertiary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
@@ -253,15 +253,15 @@ struct DiscoverView: View {
     private var emptyState: some View {
         VStack(spacing: Spacing.lg) {
             Spacer()
-            Image(systemName: "book.closed")
-                .font(.system(size: 48))
-                .foregroundColor(.inkTertiary)
+            Image(systemName: "book.closed.circle.fill")
+                .font(.system(size: 80))
+                .foregroundStyle(.accent)
             Text("No clubs found nearby")
                 .font(.appHeadline)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
             Text("Try expanding your search or changing your filters.")
                 .font(.appBody)
-                .foregroundColor(.inkSecondary)
+                .foregroundStyle(.inkSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.xxl)
             Button("Create a Club") {}
@@ -273,7 +273,6 @@ struct DiscoverView: View {
 
 // MARK: - Filter Dropdown Chip
 // Active = filled purple, inactive = light purple. Cohesive CornerRadius.button.
-// Optional badge shows selection count (used by Genre).
 
 struct FilterDropdownChip: View {
     let label: String
@@ -290,7 +289,7 @@ struct FilterDropdownChip: View {
             if let count = badge {
                 Text("\(count)")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.accentColor)
+                    .foregroundStyle(.accent)
                     .frame(width: 18, height: 18)
                     .background(Color.white)
                     .clipShape(Circle())
@@ -299,7 +298,7 @@ struct FilterDropdownChip: View {
             Image(systemName: "chevron.down")
                 .font(.system(size: 11, weight: .medium))
         }
-        .foregroundColor(isActive ? .white : .accentColor)
+        .foregroundStyle(isActive ? .white : .accentColor)
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
         .frame(maxWidth: .infinity)
@@ -337,7 +336,7 @@ struct DiscoverClubCard: View {
                 Color.purpleTint
                     .overlay(
                         Image(systemName: "books.vertical.fill")
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.accent)
                             .font(.system(size: 28))
                     )
             }
@@ -348,12 +347,12 @@ struct DiscoverClubCard: View {
                 HStack(alignment: .top) {
                     Text(club.name)
                         .font(.appHeadline)
-                        .foregroundColor(.inkPrimary)
+                        .foregroundStyle(.inkPrimary)
                         .lineLimit(1)
                     Spacer(minLength: Spacing.sm)
                     Text(DistanceFormatter.string(fromMeters: club.distanceMeters ?? 800))
                         .font(.appCaption)
-                        .foregroundColor(.inkSecondary)
+                        .foregroundStyle(.inkSecondary)
                         .fixedSize()
                 }
 
@@ -361,7 +360,7 @@ struct DiscoverClubCard: View {
                    let genre = Genre(rawValue: firstGenre) {
                     Text(genre.label)
                         .font(.appCaption.weight(.semibold))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(.accent)
                 }
 
                 HStack(spacing: Spacing.md) {
@@ -371,7 +370,7 @@ struct DiscoverClubCard: View {
                         Text("\(club.memberCount ?? 0)")
                             .font(.appCaption)
                     }
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
 
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
@@ -379,17 +378,17 @@ struct DiscoverClubCard: View {
                         Text("Oct 12")
                             .font(.appCaption)
                     }
-                    .foregroundColor(.inkSecondary)
+                    .foregroundStyle(.inkSecondary)
                 }
 
                 if let book = club.currentBook {
                     HStack(spacing: 4) {
                         Text("Reading:")
                             .font(.appCaption.weight(.semibold))
-                            .foregroundColor(.inkPrimary)
+                            .foregroundStyle(.inkPrimary)
                         Text(book.title)
                             .font(.appCaption)
-                            .foregroundColor(.inkSecondary)
+                            .foregroundStyle(.inkSecondary)
                             .lineLimit(1)
                     }
                 }
@@ -465,7 +464,7 @@ struct DiscoverMapView: View {
                 Annotation("", coordinate: coordinate(for: index)) {
                     Image(systemName: "mappin.circle.fill")
                         .font(.system(size: 36))
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(.accent)
                         .shadow(color: .black.opacity(0.2), radius: 4)
                         .onTapGesture { sheetClub = club }
                 }
@@ -500,7 +499,7 @@ struct MapClubBottomSheet: View {
                 Color.purpleTint
                     .overlay(
                         Image(systemName: "books.vertical.fill")
-                            .foregroundColor(.accentColor)
+                            .foregroundStyle(.accent)
                             .font(.system(size: 32))
                     )
             }
@@ -511,7 +510,7 @@ struct MapClubBottomSheet: View {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.inkPrimary)
+                        .foregroundStyle(.inkPrimary)
                         .frame(width: 26, height: 26)
                         .background(Color.cardBackground)
                         .clipShape(Circle())
@@ -523,7 +522,7 @@ struct MapClubBottomSheet: View {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text(club.name)
                     .font(.appHeadline)
-                    .foregroundColor(.inkPrimary)
+                    .foregroundStyle(.inkPrimary)
 
                 HStack(spacing: 4) {
                     Image(systemName: "person.2")
@@ -531,7 +530,7 @@ struct MapClubBottomSheet: View {
                     Text("\(club.memberCount ?? 0) members")
                         .font(.appBody)
                 }
-                .foregroundColor(.inkSecondary)
+                .foregroundStyle(.inkSecondary)
 
                 Button("View Club") { onViewClub() }
                     .buttonStyle(PrimaryButtonStyle())

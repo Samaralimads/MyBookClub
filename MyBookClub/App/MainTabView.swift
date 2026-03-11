@@ -12,37 +12,29 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
-                DiscoverView()
+            Tab("Discover", systemImage: "map.fill", value: AppTab.discover) {
+                NavigationStack {
+                    DiscoverView()
+                }
             }
-            .tabItem {
-                Label("Discover", systemImage: "map.fill")
-            }
-            .tag(AppTab.discover)
 
-            NavigationStack {
-                MyClubsView()
+            Tab("My Clubs", systemImage: "books.vertical.fill", value: AppTab.myClubs) {
+                NavigationStack {
+                    MyClubsView()
+                }
             }
-            .tabItem {
-                Label("My Clubs", systemImage: "books.vertical.fill")
-            }
-            .tag(AppTab.myClubs)
 
-            NavigationStack {
-                MeetingsView()
+            Tab("Meetings", systemImage: "calendar", value: AppTab.meetings) {
+                NavigationStack {
+                    MeetingsView()
+                }
             }
-            .tabItem {
-                Label("Meetings", systemImage: "calendar")
-            }
-            .tag(AppTab.meetings)
 
-            NavigationStack {
-                ProfileView()
+            Tab("Profile", systemImage: "person.fill", value: AppTab.profile) {
+                NavigationStack {
+                    ProfileView()
+                }
             }
-            .tabItem {
-                Label("Profile", systemImage: "person.fill")
-            }
-            .tag(AppTab.profile)
         }
         .tint(.accent)
         .toolbarBackground(Color.cardBackground, for: .tabBar)
@@ -55,5 +47,5 @@ enum AppTab: Hashable {
 }
 
 #Preview {
-    MainTabView().environment(AuthViewModel())
+    MainTabView()
 }

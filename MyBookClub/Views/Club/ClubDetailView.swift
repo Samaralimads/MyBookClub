@@ -54,7 +54,7 @@ struct ClubDetailView: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                     .background(Color.black.opacity(0.35))
                     .clipShape(Circle())
@@ -63,7 +63,7 @@ struct ClubDetailView: View {
             Button { } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
                     .background(Color.black.opacity(0.35))
                     .clipShape(Circle())
@@ -96,13 +96,13 @@ struct ClubDetailView: View {
                let genre = Genre(rawValue: firstGenre) {
                 Text(genre.label.uppercased())
                     .font(.appCaption.weight(.bold))
-                    .foregroundColor(.accentColor)
+                    .foregroundStyle(.accent)
                     .tracking(0.8)
             }
 
             Text(club.name)
                 .font(.appTitle)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
 
             HStack(spacing: Spacing.xl) {
                 HStack(spacing: 6) {
@@ -119,7 +119,7 @@ struct ClubDetailView: View {
                         .lineLimit(1)
                 }
             }
-            .foregroundColor(.inkSecondary)
+            .foregroundStyle(.inkSecondary)
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.top, Spacing.xl)
@@ -141,7 +141,7 @@ struct ClubDetailView: View {
         if membershipStatus == .pending {
             Text("Request Pending")
                 .font(.appBody.weight(.semibold))
-                .foregroundColor(.inkSecondary)
+                .foregroundStyle(.inkSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.md + 2)
                 .background(Color.purpleTint)
@@ -181,7 +181,7 @@ struct ClubDetailView: View {
                         VStack(spacing: 0) {
                             Text(tab.rawValue)
                                 .font(.appBody.weight(selectedTab == tab ? .semibold : .regular))
-                                .foregroundColor(selectedTab == tab ? .accentColor : .inkSecondary)
+                                .foregroundStyle(selectedTab == tab ? .accent : .inkSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, Spacing.md)
 

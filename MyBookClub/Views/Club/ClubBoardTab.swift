@@ -15,10 +15,10 @@ struct ClubBoardTab: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("Board")
                 .font(.appHeadline)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
             Text("Club announcements and discussion coming in Part 3.")
                 .font(.appBody)
-                .foregroundColor(.inkTertiary)
+                .foregroundStyle(.inkTertiary)
         }
         .padding(.bottom, Spacing.xxl)
     }

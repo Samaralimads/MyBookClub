@@ -14,13 +14,12 @@ struct ClubHistoryTab: View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("Past Books")
                 .font(.appHeadline)
-                .foregroundColor(.inkPrimary)
+                .foregroundStyle(.inkPrimary)
             Text("Reading history coming in Part 3.")
                 .font(.appBody)
-                .foregroundColor(.inkTertiary)
+                .foregroundStyle(.inkTertiary)
         }
         .padding(.bottom, Spacing.xxl)
     }
     
 }
-
