@@ -11,13 +11,10 @@ struct SplashView: View {
     var body: some View {
         ZStack {
             Color.background.ignoresSafeArea()
-            VStack(spacing: Spacing.lg) {
-                Image(systemName: "book.closed.fill")
-                    .font(.system(size: 56))
-                    .foregroundColor(.accent)
-                Text("MyBookClub")
-                    .font(.appTitle)
-                    .foregroundColor(.inkPrimary)
+            VStack {
+                Image("logo")
+                    .resizable()
+                    .scaledToFit()
                 ProgressView()
                     .tint(.accent)
             }

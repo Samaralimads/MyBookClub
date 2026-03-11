@@ -15,7 +15,6 @@ struct MyBookClubApp: App {
         WindowGroup {
             RootView()
                 .environment(authVM)
-                .preferredColorScheme(.dark)  // Dark mode first by design
                 .task {
                     await authVM.startListening()
                 }

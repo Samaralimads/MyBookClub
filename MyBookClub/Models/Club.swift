@@ -23,25 +23,30 @@ struct Club: Codable, Identifiable, Hashable {
     var currentBookId: UUID?
     let createdAt: Date
 
-    // Joined fields (not in DB column, populated by joins)
+    // Joined fields (populated by joins / RPC)
     var currentBook: Book?
     var memberCount: Int?
 
+    // Returned by nearby_clubs RPC — distance in metres from user's location.
+    // nil when fetched directly (e.g. fetchClub by ID).
+    var distanceMeters: Double?
+
     enum CodingKeys: String, CodingKey {
         case id
-        case organiserId     = "organiser_id"
+        case organiserId    = "organiser_id"
         case name
         case description
-        case coverImageURL   = "cover_image_url"
-        case genreTags       = "genre_tags"
-        case cityLabel       = "city_label"
-        case isPublic        = "is_public"
-        case memberCap       = "member_cap"
-        case recurringDay    = "recurring_day"
-        case recurringTime   = "recurring_time"
-        case currentBookId   = "current_book_id"
-        case createdAt       = "created_at"
-        case currentBook     = "books"
-        case memberCount     = "member_count"
+        case coverImageURL  = "cover_image_url"
+        case genreTags      = "genre_tags"
+        case cityLabel      = "city_label"
+        case isPublic       = "is_public"
+        case memberCap      = "member_cap"
+        case recurringDay   = "recurring_day"
+        case recurringTime  = "recurring_time"
+        case currentBookId  = "current_book_id"
+        case createdAt      = "created_at"
+        case currentBook    = "books"
+        case memberCount    = "member_count"
+        case distanceMeters = "distance_meters"
     }
 }

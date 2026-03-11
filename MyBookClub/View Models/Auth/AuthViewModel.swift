@@ -13,12 +13,12 @@ import Supabase
 @Observable
 final class AuthViewModel {
 
-    // MARK: - State
+    // MARK: - Auth State
 
     enum AuthState {
         case loading
         case unauthenticated
-        case needsOnboarding   // signed in but profile incomplete
+        case needsOnboarding
         case authenticated
     }
 
@@ -26,22 +26,94 @@ final class AuthViewModel {
     var error: AppError?
     var isLoading = false
 
-    // Email/password fields
-    var email    = ""
-    var password = ""
-    var displayName = ""
+    // Captured during sign-up or Apple — passed to onboarding
+    var pendingDisplayName = ""
+
+    // Password reset
+    var resetPasswordSent = false
+
+    // MARK: - Sign In Fields + Validation
+
+    var signInEmail    = ""
+    var signInPassword = ""
+
+    var signInEmailError: String? {
+        guard !signInEmail.isEmpty else { return nil }
+        return isValidEmail(signInEmail) ? nil : "Enter a valid email address"
+    }
+    var signInPasswordError: String? {
+        guard !signInPassword.isEmpty else { return nil }
+        return signInPassword.count >= 8 ? nil : "Password must be at least 8 characters"
+    }
+    var canSignIn: Bool {
+        signInEmailError == nil && signInPasswordError == nil
+            && !signInEmail.isEmpty && !signInPassword.isEmpty
+    }
+
+    // MARK: - Sign Up Fields + Validation
+
+    var signUpName            = ""
+    var signUpEmail           = ""
+    var signUpPassword        = ""
+
+    var signUpNameError: String? {
+        guard !signUpName.isEmpty else { return nil }
+        return signUpName.trimmingCharacters(in: .whitespaces).count >= 2
+            ? nil : "Name must be at least 2 characters"
+    }
+    var signUpEmailError: String? {
+        guard !signUpEmail.isEmpty else { return nil }
+        return isValidEmail(signUpEmail) ? nil : "Enter a valid email address"
+    }
+    var signUpPasswordError: String? {
+        guard !signUpPassword.isEmpty else { return nil }
+        var issues: [String] = []
+        if signUpPassword.count < 8 { issues.append("at least 8 characters") }
+        if !signUpPassword.contains(where: { $0.isUppercase }) { issues.append("one uppercase letter") }
+        if !signUpPassword.contains(where: { $0.isNumber })    { issues.append("one number") }
+        return issues.isEmpty ? nil : "Password needs: \(issues.joined(separator: ", "))"
+    }
+    var passwordStrength: Int {
+        var score = 0
+        let p = signUpPassword
+        if p.count >= 8  { score += 1 }
+        if p.count >= 12 { score += 1 }
+        if p.contains(where: { $0.isUppercase }) { score += 1 }
+        if p.contains(where: { $0.isNumber })    { score += 1 }
+        if p.contains(where: { "!@#$%^&*".contains($0) }) { score += 1 }
+        return score
+    }
+    var passwordStrengthLabel: String {
+        switch passwordStrength {
+        case 0, 1: return "Weak"
+        case 2, 3: return "Fair"
+        case 4:    return "Strong"
+        default:   return "Very strong"
+        }
+    }
+    var canSignUp: Bool {
+        signUpNameError == nil && signUpEmailError == nil
+            && signUpPasswordError == nil
+            && !signUpName.trimmingCharacters(in: .whitespaces).isEmpty
+            && !signUpEmail.isEmpty && !signUpPassword.isEmpty 
+    }
+
+    // MARK: - Helpers
+
+    private func isValidEmail(_ email: String) -> Bool {
+        let pattern = #"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"#
+        return email.range(of: pattern, options: .regularExpression) != nil
+    }
 
     // MARK: - Supabase Auth Listener
 
     func startListening() async {
-        // Check current session immediately on launch
         if SupabaseService.shared.client.auth.currentSession != nil {
             await checkOnboardingStatus()
         } else {
             authState = .unauthenticated
         }
-        
-        // Then listen for future changes
+
         for await (event, _) in SupabaseService.shared.client.auth.authStateChanges {
             switch event {
             case .signedIn:
@@ -57,14 +129,12 @@ final class AuthViewModel {
     private func checkOnboardingStatus() async {
         do {
             let user = try await SupabaseService.shared.fetchCurrentUser()
-            // Profile is complete if they have a display name and at least one genre
             if user.displayName.isEmpty || (user.genrePrefs ?? []).isEmpty {
                 authState = .needsOnboarding
             } else {
                 authState = .authenticated
             }
         } catch {
-            // User row doesn't exist yet — needs onboarding
             authState = .needsOnboarding
         }
     }
@@ -74,6 +144,7 @@ final class AuthViewModel {
     func handleAppleSignIn(result: Result<ASAuthorization, Error>) async {
         isLoading = true
         defer { isLoading = false }
+        error = nil
 
         do {
             guard case .success(let auth) = result,
@@ -82,7 +153,6 @@ final class AuthViewModel {
                   let tokenString = String(data: identityToken, encoding: .utf8)
             else {
                 if case .failure(let err) = result {
-                    // ASAuthorizationError.canceled is normal — don't surface it
                     let nsErr = err as NSError
                     if nsErr.code != ASAuthorizationError.canceled.rawValue {
                         self.error = AppError(underlying: err)
@@ -91,78 +161,79 @@ final class AuthViewModel {
                 return
             }
 
+            if let firstName = credential.fullName?.givenName {
+                pendingDisplayName = firstName
+            }
+
             try await SupabaseService.shared.client.auth.signInWithIdToken(
-                credentials: .init(
-                    provider: .apple,
-                    idToken: tokenString
-                )
+                credentials: .init(provider: .apple, idToken: tokenString)
             )
-            // authStateChanges listener will fire and update authState
         } catch {
             self.error = AppError(underlying: error)
         }
     }
 
-    // MARK: - Email / Password
+    // MARK: - Email Sign In
 
     func signInWithEmail() async {
         isLoading = true
         defer { isLoading = false }
         error = nil
 
-        guard !email.isEmpty, !password.isEmpty else {
-            error = AppError("Please enter your email and password.")
-            return
-        }
-
         do {
             try await SupabaseService.shared.client.auth.signIn(
-                email: email.lowercased().trimmingCharacters(in: .whitespaces),
-                password: password
+                email: signInEmail.lowercased().trimmingCharacters(in: .whitespaces),
+                password: signInPassword
             )
         } catch {
             self.error = AppError(underlying: error)
         }
     }
+
+    // MARK: - Email Sign Up
 
     func signUpWithEmail() async {
         isLoading = true
         defer { isLoading = false }
         error = nil
 
-        guard !email.isEmpty, !password.isEmpty else {
-            error = AppError("Please enter your email and password.")
-            return
-        }
-        guard password.count >= 8 else {
-            error = AppError("Password must be at least 8 characters.")
-            return
-        }
+        pendingDisplayName = signUpName.trimmingCharacters(in: .whitespaces)
 
         do {
             try await SupabaseService.shared.client.auth.signUp(
-                email: email.lowercased().trimmingCharacters(in: .whitespaces),
-                password: password
+                email: signUpEmail.lowercased().trimmingCharacters(in: .whitespaces),
+                password: signUpPassword
             )
-            // Supabase sends a confirmation email; session fires when confirmed
         } catch {
             self.error = AppError(underlying: error)
         }
     }
+
+    // MARK: - Forgot Password
+
+    func isValidResetEmail(_ email: String) -> Bool {
+        isValidEmail(email)
+    }
+
+    func sendPasswordReset(email: String) async {
+        isLoading = true
+        defer { isLoading = false }
+        error = nil
+        do {
+            try await SupabaseService.shared.client.auth.resetPasswordForEmail(email)
+            resetPasswordSent = true
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    // MARK: - Sign Out
 
     func signOut() async {
         isLoading = true
         defer { isLoading = false }
         do {
             try await SupabaseService.shared.client.auth.signOut()
-        } catch {
-            self.error = AppError(underlying: error)
-        }
-    }
-
-    func resetPassword(email: String) async {
-        do {
-            try await SupabaseService.shared.client.auth.resetPasswordForEmail(email)
         } catch {
             self.error = AppError(underlying: error)
         }

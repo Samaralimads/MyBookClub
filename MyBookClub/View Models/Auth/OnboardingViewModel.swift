@@ -7,35 +7,34 @@
 
 import Foundation
 import SwiftUI
+import CoreLocation
 
 @Observable
 final class OnboardingViewModel {
 
-    var displayName  = ""
+    var displayName      = ""
     var selectedGenres: Set<String> = []
     var readingFreq: ReadingFrequency = .weekly
-    var hasAcceptedPrivacyPolicy = false
-    var currentStep: OnboardingStep = .privacyPolicy
+    var currentStep: OnboardingStep = .genres
     var isLoading = false
     var error: AppError?
+    var locationService = LocationService()
 
     enum OnboardingStep: Int, CaseIterable {
-        case privacyPolicy = 0
-        case displayName   = 1
-        case genres        = 2
-        case readingFreq   = 3
+        case genres      = 0
+        case readingFreq = 1
+        case location    = 2
     }
 
-    var canAdvanceFromCurrentStep: Bool {
+    var canAdvance: Bool {
         switch currentStep {
-        case .privacyPolicy: return hasAcceptedPrivacyPolicy
-        case .displayName:   return displayName.trimmingCharacters(in: .whitespaces).count >= 2
-        case .genres:        return !selectedGenres.isEmpty
-        case .readingFreq:   return true
+        case .genres:      return !selectedGenres.isEmpty
+        case .readingFreq: return true
+        case .location:    return true
         }
     }
 
-    var isLastStep: Bool { currentStep == .readingFreq }
+    var isLastStep: Bool { currentStep == .location }
 
     func advance() {
         guard let next = OnboardingStep(rawValue: currentStep.rawValue + 1) else { return }
@@ -50,6 +49,10 @@ final class OnboardingViewModel {
         }
     }
 
+    func requestLocation() {
+        locationService.requestWhenInUse()
+    }
+
     func completeOnboarding(authViewModel: AuthViewModel) async {
         isLoading = true
         defer { isLoading = false }
@@ -60,9 +63,12 @@ final class OnboardingViewModel {
             return
         }
 
+        let name = displayName.trimmingCharacters(in: .whitespaces).isEmpty
+            ? "Reader" : displayName.trimmingCharacters(in: .whitespaces)
+
         let user = AppUser(
             id: uid,
-            displayName: displayName.trimmingCharacters(in: .whitespaces),
+            displayName: name,
             bio: nil,
             avatarURL: nil,
             genrePrefs: Array(selectedGenres),

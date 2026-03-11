@@ -9,19 +9,21 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AuthViewModel.self) private var authVM
-
+    
     var body: some View {
         Group {
             switch authVM.authState {
             case .loading:
                 SplashView()
-
+                
             case .unauthenticated:
-                AuthView()
-
+                NavigationStack {
+                    SignUpView()
+                }
+                
             case .needsOnboarding:
                 OnboardingView()
-
+                
             case .authenticated:
                 MainTabView()
             }

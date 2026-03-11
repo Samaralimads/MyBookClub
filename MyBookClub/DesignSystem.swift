@@ -35,7 +35,7 @@ extension Font {
 enum CornerRadius {
     static let card:   CGFloat = 12
     static let sheet:  CGFloat = 20
-    static let button: CGFloat = 10
+    static let button: CGFloat = 50
     static let badge:  CGFloat = 6
     static let avatar: CGFloat = 8
 }
@@ -82,24 +82,26 @@ extension View {
 
 struct PrimaryButtonStyle: ButtonStyle {
     var isFullWidth: Bool = true
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.appBody.weight(.semibold))
-            .foregroundColor(.inkPrimary)
-            .frame(maxWidth: isFullWidth ? .infinity : nil)
-            .padding(.vertical, Spacing.md)
+            .foregroundColor(.white)
+            .frame(maxWidth: isFullWidth ? .infinity : nil, minHeight: 50, maxHeight: 50)
             .padding(.horizontal, Spacing.xl)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.button)
-                    .fill(Color.accentColor.opacity(configuration.isPressed ? 0.7 : 1.0))
-            )
+            .background(Color.accentColor)
+            .clipShape(RoundedRectangle(cornerRadius: 50))
+            .opacity(configuration.isPressed ? 0.75 : isEnabled ? 1.0 : 0.6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(Animations.fade, value: configuration.isPressed)
+            .animation(Animations.fade, value: isEnabled)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.appBody.weight(.semibold))
@@ -108,9 +110,32 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, Spacing.xl)
             .background(
                 RoundedRectangle(cornerRadius: CornerRadius.button)
-                    .stroke(Color.accentColor, lineWidth: 1.5)
+                    .stroke(Color.accent, lineWidth: 1.5)
             )
-            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : isEnabled ? 1.0 : 0.4)
             .animation(Animations.fade, value: configuration.isPressed)
+            .animation(Animations.fade, value: isEnabled)
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
