@@ -14,7 +14,7 @@ struct Meeting: Codable, Identifiable, Hashable {
     var scheduledAt: Date
     var chaptersDue: Int?
     var notes: String?
-    var meetingURL: String?
+    var address: String?
     var notifSent24h: Bool
     var notifSent1h: Bool
     let createdAt: Date
@@ -29,7 +29,7 @@ struct Meeting: Codable, Identifiable, Hashable {
         case scheduledAt  = "scheduled_at"
         case chaptersDue  = "chapters_due"
         case notes
-        case meetingURL   = "meeting_url"
+        case address
         case notifSent24h = "notif_sent_24h"
         case notifSent1h  = "notif_sent_1h"
         case createdAt    = "created_at"

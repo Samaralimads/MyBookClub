@@ -10,9 +10,9 @@ import Supabase
 
 final class SupabaseService {
     static let shared = SupabaseService()
-
+    
     let client: SupabaseClient
-
+    
     private init() {
         client = SupabaseClient(
             supabaseURL: URL(string: Config.supabaseURL)!,
@@ -24,23 +24,23 @@ final class SupabaseService {
             )
         )
     }
-
+    
     // MARK: - Auth helpers
-
+    
     var currentUserID: UUID? {
         client.auth.currentUser?.id
     }
-
+    
     // MARK: - Decoder
-
+    
     private var decoder: JSONDecoder {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
     }
-
+    
     // MARK: - User Profile
-
+    
     func fetchCurrentUser() async throws -> AppUser {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
         return try await client
@@ -51,11 +51,11 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func upsertUser(_ user: AppUser) async throws {
         try await client.from("users").upsert(user).execute()
     }
-
+    
     func updateAPNSToken(_ token: String) async throws {
         guard let uid = currentUserID else { return }
         try await client
@@ -64,9 +64,9 @@ final class SupabaseService {
             .eq("id", value: uid.uuidString)
             .execute()
     }
-
+    
     // MARK: - Club Discovery
-
+    
     func fetchNearbyClubs(
         lat: Double,
         lng: Double,
@@ -90,7 +90,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func fetchClub(id: UUID) async throws -> Club {
         try await client
             .from("clubs")
@@ -100,7 +100,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func fetchMyClubs() async throws -> [Club] {
         guard let uid = currentUserID else { return [] }
         return try await client
@@ -110,9 +110,9 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     // MARK: - Club Membership
-
+    
     func membershipStatus(clubId: UUID) async throws -> MemberStatus? {
         guard let uid = currentUserID else { return nil }
         let rows: [ClubMember] = try await client
@@ -124,7 +124,7 @@ final class SupabaseService {
             .value
         return rows.first?.status
     }
-
+    
     func myRole(clubId: UUID) async throws -> MemberRole? {
         guard let uid = currentUserID else { return nil }
         let rows: [ClubMember] = try await client
@@ -136,7 +136,7 @@ final class SupabaseService {
             .value
         return rows.first?.role
     }
-
+    
     func joinClub(clubId: UUID, isPublic: Bool) async throws {
         guard let uid = currentUserID else { return }
         let status = isPublic ? "active" : "pending"
@@ -147,7 +147,7 @@ final class SupabaseService {
             "status": status,
         ]).execute()
     }
-
+    
     func leaveClub(clubId: UUID) async throws {
         guard let uid = currentUserID else { return }
         try await client
@@ -157,7 +157,7 @@ final class SupabaseService {
             .eq("user_id", value: uid.uuidString)
             .execute()
     }
-
+    
     func removeMember(clubId: UUID, userId: UUID) async throws {
         try await client
             .from("club_members")
@@ -166,9 +166,9 @@ final class SupabaseService {
             .eq("user_id", value: userId.uuidString)
             .execute()
     }
-
+    
     // MARK: - Club Creation
-
+    
     func createClub(
         name: String,
         description: String?,
@@ -183,14 +183,14 @@ final class SupabaseService {
         recurringTime: String?
     ) async throws -> Club {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
-
+        
         // Round to 2dp for GDPR (~1km precision)
         let roundedLat = (lat * 100).rounded() / 100
         let roundedLng = (lng * 100).rounded() / 100
-
+        
         // Supabase accepts PostGIS WKT for geography inserts
         let locationWKT = "SRID=4326;POINT(\(roundedLng) \(roundedLat))"
-
+        
         struct ClubInsert: Encodable {
             let organiser_id: String
             let name: String
@@ -204,7 +204,7 @@ final class SupabaseService {
             let recurring_day: String?
             let recurring_time: String?
         }
-
+        
         let insert = ClubInsert(
             organiser_id: uid.uuidString,
             name: name,
@@ -218,7 +218,7 @@ final class SupabaseService {
             recurring_day: recurringDay,
             recurring_time: recurringTime
         )
-
+        
         let club: Club = try await client
             .from("clubs")
             .insert(insert)
@@ -226,7 +226,7 @@ final class SupabaseService {
             .single()
             .execute()
             .value
-
+        
         // Add organiser as first member
         try await client.from("club_members").insert([
             "club_id": club.id.uuidString,
@@ -234,12 +234,21 @@ final class SupabaseService {
             "role": "organiser",
             "status": "active",
         ]).execute()
-
+        
         return club
     }
+    // MARK: - Club cover image
 
+    func updateClubCover(clubId: UUID, coverImageURL: String) async throws {
+        try await client
+            .from("clubs")
+            .update(["cover_image_url": coverImageURL])
+            .eq("id", value: clubId.uuidString)
+            .execute()
+    }
+    
     // MARK: - Meetings
-
+    
     func fetchMeetings(clubId: UUID) async throws -> [Meeting] {
         try await client
             .from("meetings")
@@ -249,7 +258,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func fetchUpcomingMeetingsForUser() async throws -> [Meeting] {
         guard let uid = currentUserID else { return [] }
         return try await client
@@ -257,14 +266,14 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func createMeeting(
         clubId: UUID,
         title: String,
         scheduledAt: Date,
         chaptersDue: Int?,
         notes: String?,
-        meetingURL: String?
+        address: String?
     ) async throws -> Meeting {
         struct MeetingInsert: Encodable {
             let club_id: String
@@ -272,19 +281,18 @@ final class SupabaseService {
             let scheduled_at: String
             let chapters_due: Int?
             let notes: String?
-            let meeting_url: String?
+            let address: String?
         }
-
-        let formatter = ISO8601DateFormatter()
+        
         let insert = MeetingInsert(
             club_id: clubId.uuidString,
             title: title,
-            scheduled_at: formatter.string(from: scheduledAt),
+            scheduled_at: ISO8601DateFormatter().string(from: scheduledAt),
             chapters_due: chaptersDue,
             notes: notes,
-            meeting_url: meetingURL
+            address: address
         )
-
+        
         return try await client
             .from("meetings")
             .insert(insert)
@@ -293,9 +301,9 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     // MARK: - Reading Progress
-
+    
     func fetchReadingProgress(clubId: UUID, bookId: UUID) async throws -> ReadingProgress? {
         guard let uid = currentUserID else { return nil }
         let rows: [ReadingProgress] = try await client
@@ -308,7 +316,7 @@ final class SupabaseService {
             .value
         return rows.first
     }
-
+    
     func upsertReadingProgress(clubId: UUID, bookId: UUID, currentChapter: Int) async throws {
         guard let uid = currentUserID else { return }
         try await client.from("reading_progress").upsert([
@@ -319,9 +327,9 @@ final class SupabaseService {
             "updated_at":      ISO8601DateFormatter().string(from: Date()),
         ]).execute()
     }
-
+    
     // MARK: - Posts (Board)
-
+    
     func fetchPosts(clubId: UUID) async throws -> [Post] {
         try await client
             .from("posts")
@@ -332,7 +340,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func fetchComments(parentPostId: UUID) async throws -> [Post] {
         try await client
             .from("posts")
@@ -342,7 +350,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func createPost(
         clubId: UUID,
         content: String,
@@ -375,11 +383,11 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func deletePost(id: UUID) async throws {
         try await client.from("posts").delete().eq("id", value: id.uuidString).execute()
     }
-
+    
     func addReaction(postId: UUID, emoji: String) async throws {
         // Fetch current reactions, increment, update
         let post: Post = try await client
@@ -397,9 +405,9 @@ final class SupabaseService {
             .eq("id", value: postId.uuidString)
             .execute()
     }
-
+    
     // MARK: - Voting
-
+    
     func fetchActiveVoteSession(clubId: UUID) async throws -> VoteSession? {
         let rows: [VoteSession] = try await client
             .from("vote_sessions")
@@ -412,7 +420,7 @@ final class SupabaseService {
             .value
         return rows.first
     }
-
+    
     func openVoteSession(clubId: UUID, deadline: Date?) async throws -> VoteSession {
         struct VoteSessionInsert: Encodable {
             let club_id: String
@@ -430,7 +438,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     func castVote(voteSessionId: UUID, bookId: UUID, clubId: UUID) async throws {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
         try await client.from("votes").insert([
@@ -440,7 +448,7 @@ final class SupabaseService {
             "user_id":         uid.uuidString,
         ]).execute()
     }
-
+    
     func closeVoteSession(voteSessionId: UUID, winnerBookId: UUID, clubId: UUID) async throws {
         try await client
             .from("vote_sessions")
@@ -450,7 +458,7 @@ final class SupabaseService {
             ])
             .eq("id", value: voteSessionId.uuidString)
             .execute()
-
+        
         // Set as club's current book
         try await client
             .from("clubs")
@@ -458,9 +466,9 @@ final class SupabaseService {
             .eq("id", value: clubId.uuidString)
             .execute()
     }
-
+    
     // MARK: - Books
-
+    
     func cacheBook(_ book: Book) async throws -> Book {
         return try await client
             .from("books")
@@ -470,9 +478,9 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
     // MARK: - Reports
-
+    
     func reportPost(postId: UUID, reason: String?) async throws {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
         try await client.from("reports").insert([

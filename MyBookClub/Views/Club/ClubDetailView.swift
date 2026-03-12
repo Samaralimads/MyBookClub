@@ -41,36 +41,7 @@ struct ClubDetailView: View {
         }
         .background(Color.background)
         .ignoresSafeArea(edges: .top)
-        .overlay(alignment: .top) {
-            navButtons
-        }
         .task { await loadMembership() }
-    }
-
-    // MARK: - Nav Buttons (float over hero)
-
-    private var navButtons: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.black.opacity(0.35))
-                    .clipShape(Circle())
-            }
-            Spacer()
-            Button { } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.black.opacity(0.35))
-                    .clipShape(Circle())
-            }
-        }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.top, 56)
     }
 
     // MARK: - Hero

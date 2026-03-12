@@ -35,9 +35,9 @@ struct SignUpView: View {
                         VStack(spacing: Spacing.lg) {
                             
                             AuthInputField(
-                                label: "Full Name",
+                                label: "Name",
                                 icon: "person",
-                                placeholder: "Jane Doe",
+                                placeholder: "Your Name",
                                 text: $vm.signUpName,
                                 error: authVM.signUpNameError
                             )

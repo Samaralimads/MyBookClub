@@ -18,9 +18,7 @@ struct DiscoverView: View {
                 .foregroundStyle(.inkPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.sm)
-                .background(Color.background)
+                .padding(.vertical, Spacing.md)
             
             DiscoverToolbar(vm: vm)
             

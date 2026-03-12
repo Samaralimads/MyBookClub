@@ -257,12 +257,14 @@ enum MeetingFrequency: String, CaseIterable {
     case weekly   = "weekly"
     case biWeekly = "bi-weekly"
     case monthly  = "monthly"
+    case flexible = "flexible"
 
     var label: String {
         switch self {
         case .weekly:   "Weekly"
         case .biWeekly: "Bi-weekly"
         case .monthly:  "Monthly"
+        case .flexible: "Flexible"
         }
     }
 }

@@ -47,5 +47,5 @@ enum AppTab: Hashable {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView().environment(AuthViewModel())
 }
