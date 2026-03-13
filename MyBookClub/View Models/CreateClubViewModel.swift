@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import PhotosUI
+import MapKit
 
 @Observable
 final class CreateClubViewModel {
@@ -20,6 +21,10 @@ final class CreateClubViewModel {
     var isPublic                     = true
     var memberCapText                = ""
     var cityLabel                    = ""
+
+    // Coordinates resolved from the city autocomplete selection
+    var resolvedLat: Double? = nil
+    var resolvedLng: Double? = nil
 
     // Meeting Schedule
     var frequency: MeetingFrequency? = nil
@@ -65,6 +70,17 @@ final class CreateClubViewModel {
         }
     }
 
+    // MARK: - City Selection
+
+    func selectSuggestion(_ completion: MKLocalSearchCompletion, citySearch: CitySearchService) {
+        Task {
+            if let coord = await citySearch.geocode(completion) {
+                resolvedLat = coord.latitude
+                resolvedLng = coord.longitude
+            }
+        }
+    }
+
     // MARK: - Create
 
     func createClub(locationService: LocationService) async {
@@ -73,11 +89,16 @@ final class CreateClubViewModel {
         defer { isLoading = false }
         error = nil
 
+        // Use geocoded city coordinates; fall back to device location only if
+        // the user never picked a suggestion from the autocomplete list.
+        let lat = resolvedLat ?? locationService.roundedLatitude
+        let lng = resolvedLng ?? locationService.roundedLongitude
+
         let timeString: String? = {
             guard recurringDay != nil else { return nil }
-            let f = DateFormatter()
-            f.dateFormat = "HH:mm:ss"
-            return f.string(from: recurringTime)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+            return formatter.string(from: recurringTime)
         }()
 
         do {
@@ -86,8 +107,8 @@ final class CreateClubViewModel {
                 name:          name.trimmingCharacters(in: .whitespaces),
                 description:   description.trimmingCharacters(in: .whitespaces),
                 genreTags:     [genre.rawValue],
-                lat:           locationService.roundedLatitude,
-                lng:           locationService.roundedLongitude,
+                lat:           lat,
+                lng:           lng,
                 cityLabel:     cityLabel.trimmingCharacters(in: .whitespaces),
                 isPublic:      isPublic,
                 memberCap:     memberCap,

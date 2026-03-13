@@ -20,40 +20,38 @@ struct DiscoverMap: View {
     )
     @State private var sheetClub: Club?
 
-    private var displayClubs: [Club] {
-        clubs.isEmpty ? Club.mockDiscover : clubs
-    }
-
-    private func coordinate(for index: Int) -> CLLocationCoordinate2D {
-        let coords = Club.mockPinCoordinates
-        guard index < coords.count else {
-            return CLLocationCoordinate2D(latitude: 48.865, longitude: 2.350)
-        }
-        return CLLocationCoordinate2D(latitude: coords[index].0, longitude: coords[index].1)
-    }
-
     var body: some View {
-        Map(position: $position) {
-            ForEach(displayClubs.enumerated(), id: \.element.id) { index, club in
-                Annotation("", coordinate: coordinate(for: index)) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.accent)
-                        .shadow(color: .black.opacity(0.2), radius: 4)
-                        .onTapGesture { sheetClub = club }
+        if clubs.isEmpty {
+            ContentUnavailableView(
+                "No clubs nearby yet",
+                systemImage: "book.closed",
+                description: Text("Be the first to create one!")
+            )
+        } else {
+            Map(position: $position) {
+                ForEach(clubs) { club in
+                    if let lat = club.lat, let lng = club.lng {
+                        Annotation("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.accent)
+                                .shadow(color: .black.opacity(0.2), radius: 4)
+                                .onTapGesture { sheetClub = club }
+                        }
+                    }
                 }
             }
-        }
-        .ignoresSafeArea(edges: .bottom)
-        .sheet(item: $sheetClub) { club in
-            MapClubBottomSheet(club: club) {
-                sheetClub = nil
-                onSelectClub(club)
+            .ignoresSafeArea(edges: .bottom)
+            .sheet(item: $sheetClub) { club in
+                MapClubBottomSheet(club: club) {
+                    sheetClub = nil
+                    onSelectClub(club)
+                }
+                .presentationDetents([.height(260)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(CornerRadius.sheet)
+                .presentationBackgroundInteraction(.enabled)
             }
-            .presentationDetents([.height(260)])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(CornerRadius.sheet)
-            .presentationBackgroundInteraction(.enabled)
         }
     }
 }
@@ -117,5 +115,5 @@ struct MapClubBottomSheet: View {
 }
 
 #Preview {
-    DiscoverMap(clubs: Club.mockDiscover) { _ in }
+    DiscoverMap(clubs: []) { _ in }
 }

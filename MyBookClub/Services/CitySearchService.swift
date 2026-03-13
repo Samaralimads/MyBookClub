@@ -7,7 +7,6 @@
 
 import Foundation
 import MapKit
-import Combine
 
 @Observable
 final class CitySearchService: NSObject, MKLocalSearchCompleterDelegate {
@@ -16,6 +15,7 @@ final class CitySearchService: NSObject, MKLocalSearchCompleterDelegate {
         didSet {
             if query.isEmpty {
                 suggestions = []
+                completionResults = []
             } else {
                 completer.queryFragment = query
             }
@@ -24,13 +24,15 @@ final class CitySearchService: NSObject, MKLocalSearchCompleterDelegate {
 
     var suggestions: [String] = []
 
+    // Raw completion objects so the VM can geocode the chosen one
+    private(set) var completionResults: [MKLocalSearchCompletion] = []
+
     private let completer: MKLocalSearchCompleter
 
     override init() {
         completer = MKLocalSearchCompleter()
         super.init()
         completer.delegate = self
-        // Only return cities, neighbourhoods, and points of interest — no street addresses
         completer.resultTypes = [.address]
         completer.pointOfInterestFilter = .excludingAll
     }
@@ -38,25 +40,30 @@ final class CitySearchService: NSObject, MKLocalSearchCompleterDelegate {
     // MARK: - MKLocalSearchCompleterDelegate
 
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        suggestions = completer.results
+        let filtered = completer.results
             .filter { result in
-                // Keep results that have a subtitle (city/country info)
-                // and exclude results that look like full street addresses
-                // (they typically have numbers at the start of the title)
-                let title = result.title
-                let firstChar = title.first
-                return !result.subtitle.isEmpty
-                    && !(firstChar?.isNumber ?? false)
-            }
-            .map { result in
-                // Combine title + subtitle for display: "Le Marais, Paris, France"
-                result.subtitle.isEmpty ? result.title : "\(result.title), \(result.subtitle)"
+                let firstChar = result.title.first
+                return !result.subtitle.isEmpty && !(firstChar?.isNumber ?? false)
             }
             .prefix(5)
-            .map { $0 }
+
+        completionResults = Array(filtered)
+        suggestions = completionResults.map { result in
+            result.subtitle.isEmpty ? result.title : "\(result.title), \(result.subtitle)"
+        }
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
         suggestions = []
+        completionResults = []
+    }
+
+    // MARK: - Geocode
+
+    func geocode(_ completion: MKLocalSearchCompletion) async -> CLLocationCoordinate2D? {
+        let request = MKLocalSearch.Request(completion: completion)
+        let search = MKLocalSearch(request: request)
+        let response = try? await search.start()
+        return response?.mapItems.first?.location.coordinate
     }
 }

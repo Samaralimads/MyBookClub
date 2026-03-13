@@ -11,7 +11,7 @@ import PhotosUI
 struct CreateClubView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var vm          = CreateClubViewModel()
+    @State private var vm = CreateClubViewModel()
     @State private var locationSvc = LocationService()
     @State private var citySearch  = CitySearchService()
     @State private var showSuccess = false
@@ -252,11 +252,11 @@ struct CreateClubView: View {
                 // Suggestions dropdown
                 if !citySearch.suggestions.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(citySearch.suggestions, id: \.self) { suggestion in
+                        ForEach(Array(citySearch.suggestions.enumerated()), id: \.element) { index, suggestion in
                             Button {
                                 vm.cityLabel = suggestion
+                                vm.selectSuggestion(citySearch.completionResults[index], citySearch: citySearch)
                                 citySearch.query = ""
-                                citySearch.suggestions = []
                             } label: {
                                 HStack(spacing: Spacing.sm) {
                                     Image(systemName: "mappin.circle")
@@ -272,7 +272,7 @@ struct CreateClubView: View {
                                 .frame(height: 44)
                                 .background(Color.cardBackground)
                             }
-                            if suggestion != citySearch.suggestions.last {
+                            if index < citySearch.suggestions.count - 1 {
                                 Divider()
                                     .padding(.leading, Spacing.xl + Spacing.md)
                             }

@@ -101,12 +101,22 @@ struct DiscoverClubCard: View {
 }
 
 #Preview {
-    
-        LazyVStack(spacing: Spacing.md) {
-            ForEach(Club.mockDiscover) { club in
-                DiscoverClubCard(club: club, userRole: .organiser)
-            }
-        }
-        .padding(Spacing.lg)
-    
+    LazyVStack(spacing: Spacing.md) {
+        DiscoverClubCard(
+            club: Club(
+                id: UUID(),
+                name: "The Page Turners",
+                description: "A cosy group of literary fiction lovers.",
+                genreTags: ["literary-fiction"],
+                cityLabel: "Le Marais, Paris",
+                isPublic: true,
+                memberCap: 15,
+                createdAt: .now,
+                memberCount: 12,
+                distanceMeters: 800
+            ),
+            userRole: nil
+        )
+    }
+    .padding(Spacing.lg)
 }
