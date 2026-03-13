@@ -8,9 +8,10 @@
 import SwiftUI
 
 struct DiscoverView: View {
-    @State private var vm = DiscoverViewModel()
+    @State private var vm          = DiscoverViewModel()
     @State private var selectedClub: Club?
-    
+    @State private var showCreate  = false
+
     var body: some View {
         VStack(spacing: 0) {
             Text("Discover")
@@ -18,13 +19,15 @@ struct DiscoverView: View {
                 .foregroundStyle(.inkPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.md)
-            
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.sm)
+                .background(Color.background)
+
             DiscoverToolbar(vm: vm)
-            
+
             Divider()
                 .background(Color.border)
-            
+
             Group {
                 if vm.showMap {
                     DiscoverMap(clubs: vm.clubs) { club in
@@ -42,10 +45,18 @@ struct DiscoverView: View {
         .background(Color.background.ignoresSafeArea())
         .task { await vm.loadClubs() }
         .sheet(item: $selectedClub, content: ClubDetailView.init)
+        .sheet(isPresented: $showCreate) {
+            NavigationStack {
+                CreateClubView { _ in
+                    // Refresh discover list after a club is created
+                    Task { await vm.loadClubs() }
+                }
+            }
+        }
     }
-    
+
     // MARK: - List
-    
+
     @ViewBuilder
     private var discoverList: some View {
         if vm.isLoading {
@@ -53,7 +64,7 @@ struct DiscoverView: View {
             ProgressView().tint(.accent)
             Spacer()
         } else if vm.clubs.isEmpty {
-            DiscoverEmptyState()
+            DiscoverEmptyState(onCreateClub: { showCreate = true })
         } else {
             ScrollView {
                 LazyVStack(spacing: Spacing.md) {

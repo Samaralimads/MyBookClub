@@ -13,6 +13,7 @@ struct CreateClubView: View {
 
     @State private var vm          = CreateClubViewModel()
     @State private var locationSvc = LocationService()
+    @State private var citySearch  = CitySearchService()
     @State private var showSuccess = false
 
     var onClubCreated: ((Club) -> Void)?
@@ -80,14 +81,12 @@ struct CreateClubView: View {
     private var coverImageSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             SectionLabel("Cover Image")
-
             PhotosPicker(
                 selection: $vm.selectedPhotoItem,
                 matching: .images,
                 photoLibrary: .shared()
             ) {
                 ZStack {
-                    // Show selected image or placeholder
                     if let image = vm.coverImage {
                         Image(uiImage: image)
                             .resizable()
@@ -96,7 +95,6 @@ struct CreateClubView: View {
                             .frame(height: 140)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                            // "Change" overlay so user knows it's tappable
                             .overlay(alignment: .bottomTrailing) {
                                 Label("Change", systemImage: "pencil")
                                     .font(.appCaption.weight(.semibold))
@@ -108,7 +106,6 @@ struct CreateClubView: View {
                                     .padding(Spacing.sm)
                             }
                     } else {
-                        // Empty state placeholder
                         VStack(spacing: Spacing.md) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 28))
@@ -192,26 +189,114 @@ struct CreateClubView: View {
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             SectionLabel("Description *")
-            TextField("Tell people what makes your book club special...", text: $vm.description, axis: .vertical)
-                .lineLimit(4...)
-                .font(.appBody)
-                .foregroundStyle(.inkPrimary)
-                .padding(Spacing.md)
-                .background(Color.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                .overlay {
-                    RoundedRectangle(cornerRadius: CornerRadius.card)
-                        .stroke(Color.border, lineWidth: 1)
-                }
+            TextField(
+                "Tell people what makes your book club special...",
+                text: $vm.description,
+                axis: .vertical
+            )
+            .lineLimit(4...)
+            .font(.appBody)
+            .foregroundStyle(.inkPrimary)
+            .padding(Spacing.md)
+            .background(Color.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+            .overlay {
+                RoundedRectangle(cornerRadius: CornerRadius.card)
+                    .stroke(Color.border, lineWidth: 1)
+            }
         }
     }
 
-    // MARK: - City
+    // MARK: - City (with autocomplete)
 
     private var citySection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             SectionLabel("City / Neighbourhood *")
-            AppTextField(placeholder: "e.g., Le Marais, Paris", text: $vm.cityLabel)
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Text field
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "mappin")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.inkSecondary)
+                    TextField("e.g., Le Marais, Paris", text: $vm.cityLabel)
+                        .font(.appBody)
+                        .foregroundStyle(.inkPrimary)
+                        .onChange(of: vm.cityLabel) { _, newValue in
+                            citySearch.query = newValue
+                        }
+                }
+                .padding(.horizontal, Spacing.md)
+                .frame(height: 50)
+                .background(Color.cardBackground)
+                .clipShape(
+                    citySearch.suggestions.isEmpty
+                        ? AnyShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+                        : AnyShape(UnevenRoundedRectangle(
+                            topLeadingRadius: CornerRadius.card,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: 0,
+                            topTrailingRadius: CornerRadius.card
+                        ))
+                )
+                .overlay {
+                    AnyShape(UnevenRoundedRectangle(
+                        topLeadingRadius: CornerRadius.card,
+                        bottomLeadingRadius: citySearch.suggestions.isEmpty ? CornerRadius.card : 0,
+                        bottomTrailingRadius: citySearch.suggestions.isEmpty ? CornerRadius.card : 0,
+                        topTrailingRadius: CornerRadius.card
+                    ))
+                    .stroke(Color.border, lineWidth: 1)
+                }
+
+                // Suggestions dropdown
+                if !citySearch.suggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(citySearch.suggestions, id: \.self) { suggestion in
+                            Button {
+                                vm.cityLabel = suggestion
+                                citySearch.query = ""
+                                citySearch.suggestions = []
+                            } label: {
+                                HStack(spacing: Spacing.sm) {
+                                    Image(systemName: "mappin.circle")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.accent)
+                                    Text(suggestion)
+                                        .font(.appBody)
+                                        .foregroundStyle(.inkPrimary)
+                                        .lineLimit(1)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, Spacing.md)
+                                .frame(height: 44)
+                                .background(Color.cardBackground)
+                            }
+                            if suggestion != citySearch.suggestions.last {
+                                Divider()
+                                    .padding(.leading, Spacing.xl + Spacing.md)
+                            }
+                        }
+                    }
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: CornerRadius.card,
+                            bottomTrailingRadius: CornerRadius.card,
+                            topTrailingRadius: 0
+                        )
+                    )
+                    .overlay {
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: CornerRadius.card,
+                            bottomTrailingRadius: CornerRadius.card,
+                            topTrailingRadius: 0
+                        )
+                        .stroke(Color.border, lineWidth: 1)
+                    }
+                }
+            }
         }
     }
 
@@ -221,7 +306,6 @@ struct CreateClubView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             SectionLabel("Meeting Schedule")
 
-            // Frequency
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text("How often?")
                     .font(.appCaption)
@@ -264,7 +348,6 @@ struct CreateClubView: View {
                 }
             }
 
-            // Day + Time
             HStack(spacing: Spacing.md) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Day")
@@ -345,6 +428,9 @@ struct CreateClubView: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
                 SectionLabel("Maximum Members")
+                Text("(optional)")
+                    .font(.appCaption)
+                    .foregroundStyle(.inkTertiary)
             }
             HStack(spacing: Spacing.md) {
                 Image(systemName: "person.2")
@@ -402,7 +488,6 @@ struct CreateClubView: View {
 private struct SectionLabel: View {
     let text: String
     init(_ text: String) { self.text = text }
-
     var body: some View {
         Text(text)
             .font(.appBody.weight(.semibold))
@@ -413,7 +498,6 @@ private struct SectionLabel: View {
 private struct AppTextField: View {
     let placeholder: String
     @Binding var text: String
-
     var body: some View {
         TextField(placeholder, text: $text)
             .font(.appBody)
@@ -435,7 +519,6 @@ private struct VisibilityOption: View {
     let icon: String
     let isSelected: Bool
     let action: () -> Void
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: Spacing.md) {
