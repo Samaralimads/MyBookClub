@@ -10,7 +10,7 @@ import MapKit
 
 struct DiscoverMap: View {
     let clubs: [Club]
-    let onSelectClub: (Club) -> Void
+    let userRole: (Club) -> MemberRole?
 
     @State private var position: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -18,7 +18,7 @@ struct DiscoverMap: View {
             span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
         )
     )
-    @State private var sheetClub: Club?
+    @State private var selectedClub: Club?
 
     var body: some View {
         if clubs.isEmpty {
@@ -28,92 +28,55 @@ struct DiscoverMap: View {
                 description: Text("Be the first to create one!")
             )
         } else {
-            Map(position: $position) {
+            Map(position: $position, selection: $selectedClub) {
                 ForEach(clubs) { club in
                     if let lat = club.lat, let lng = club.lng {
-                        Annotation("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
+                        Annotation("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), anchor: .bottom) {
                             Image(systemName: "mappin.circle.fill")
                                 .font(.system(size: 36))
                                 .foregroundStyle(.accent)
                                 .shadow(color: .black.opacity(0.2), radius: 4)
-                                .onTapGesture { sheetClub = club }
                         }
+                        .tag(club)
                     }
                 }
             }
             .ignoresSafeArea(edges: .bottom)
-            .sheet(item: $sheetClub) { club in
-                MapClubBottomSheet(club: club) {
-                    sheetClub = nil
-                    onSelectClub(club)
+            .safeAreaInset(edge: .bottom) {
+                if let club = selectedClub {
+                    NavigationLink(value: club) {
+                        MapClubBottomCard(club: club, userRole: userRole(club))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.bottom, Spacing.lg)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .presentationDetents([.height(260)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(CornerRadius.sheet)
-                .presentationBackgroundInteraction(.enabled)
             }
+            .animation(Animations.standard, value: selectedClub)
         }
     }
 }
 
-// MARK: - Map Club Bottom Sheet
+// MARK: - Map Club Bottom Card
 
-struct MapClubBottomSheet: View {
+struct MapClubBottomCard: View {
     let club: Club
-    let onViewClub: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
+    let userRole: MemberRole?
 
     var body: some View {
-        VStack(spacing: 0) {
-            AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                Color.purpleTint
-                    .overlay {
-                        Image(systemName: "books.vertical.fill")
-                            .foregroundStyle(.accent)
-                            .font(.system(size: 32))
-                    }
+        DiscoverClubCard(club: club, userRole: userRole)
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.inkSecondary)
+                    .padding(Spacing.md)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 100)
-            .clipped()
-            .overlay(alignment: .topTrailing) {
-                Button(action: dismiss.callAsFunction) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.inkPrimary)
-                        .frame(width: 26, height: 26)
-                        .background(Color.cardBackground)
-                        .clipShape(.circle)
-                        .shadow(color: .black.opacity(0.1), radius: 2)
-                }
-                .padding(Spacing.sm)
-            }
-
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text(club.name)
-                    .font(.appHeadline)
-                    .foregroundStyle(.inkPrimary)
-
-                Label(
-                    "^[\(club.memberCount ?? 0) member](inflect: true)",
-                    systemImage: "person.2"
-                )
-                .font(.appBody)
-                .foregroundStyle(.inkSecondary)
-
-                Button("View Club", action: onViewClub)
-                    .buttonStyle(PrimaryButtonStyle())
-            }
-            .padding(Spacing.lg)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(Color.cardBackground)
     }
 }
 
 #Preview {
-    DiscoverMap(clubs: []) { _ in }
+    NavigationStack {
+        DiscoverMap(clubs: [], userRole: { _ in nil })
+    }
 }
