@@ -12,7 +12,7 @@ struct SplashView: View {
         ZStack {
             Color.background.ignoresSafeArea()
             VStack {
-                Image("logo")
+                Image("Logo")
                     .resizable()
                     .scaledToFit()
                 ProgressView()

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ReadingProgress: Codable, Identifiable {
+struct ReadingProgress: Codable, Identifiable, Equatable {
     let id: UUID
     let clubId: UUID
     let userId: UUID

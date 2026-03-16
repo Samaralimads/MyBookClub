@@ -26,13 +26,9 @@ struct Book: Codable, Identifiable, Hashable {
         case createdAt     = "created_at"
     }
 
-    /// Returns the best available cover URL, falling back to Open Library
     var displayCoverURL: URL? {
-        if let urlString = coverURL, let url = URL(string: urlString) {
-            return url
-        }
-        if let isbn = isbn {
-            return URL(string: "https://covers.openlibrary.org/b/isbn/\(isbn)-M.jpg")
+        if let urlString = coverURL {
+            return URL(string: urlString)
         }
         return nil
     }

@@ -9,13 +9,12 @@ import SwiftUI
 
 struct ClubDetailView: View {
     let club: Club
+    
     @Environment(\.dismiss) private var dismiss
+    @State private var vm = ClubDetailViewModel()
     @State private var selectedTab: ClubTab = .about
-    @State private var membershipStatus: MemberStatus?
-    @State private var myRole: MemberRole?
-    @State private var isJoining = false
-    @State private var error: AppError?
-
+    @State private var showShare = false
+    
     enum ClubTab: String, CaseIterable {
         case about   = "About"
         case book    = "Book"
@@ -23,10 +22,7 @@ struct ClubDetailView: View {
         case vote    = "Vote"
         case history = "History"
     }
-
-    var isMember: Bool   { membershipStatus == .active }
-    var isOrganiser: Bool { myRole == .organiser }
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -41,11 +37,30 @@ struct ClubDetailView: View {
         }
         .background(Color.background)
         .ignoresSafeArea(edges: .top)
-        .task { await loadMembership() }
+        .task { await vm.loadMembership(clubId: club.id) }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(
+                    item: shareURL,
+                    subject: Text(club.name),
+                    message: Text("Join me at \(club.name) on MyBookClub!")
+                ) {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(.white)
+
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
-
+    
+    // TODO: - update this URL
+    private var shareURL: URL {
+        URL(string: "https://mybookclub.app/club/\(club.id.uuidString)") ?? URL(string: "https://mybookclub.app")!
+    }
+    
     // MARK: - Hero
-
+    
     private var heroHeader: some View {
         AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
             image.resizable().scaledToFill()
@@ -58,9 +73,9 @@ struct ClubDetailView: View {
         .frame(maxWidth: .infinity, minHeight: 260)
         .clipped()
     }
-
+    
     // MARK: - Club Info (white sheet over hero)
-
+    
     private var clubInfo: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if let firstGenre = club.genreTags.first,
@@ -70,11 +85,11 @@ struct ClubDetailView: View {
                     .foregroundStyle(.accent)
                     .tracking(0.8)
             }
-
+            
             Text(club.name)
                 .font(.appTitle)
                 .foregroundStyle(.inkPrimary)
-
+            
             HStack(spacing: Spacing.xl) {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
@@ -104,12 +119,12 @@ struct ClubDetailView: View {
         .offset(y: -CornerRadius.sheet)
         .padding(.bottom, -CornerRadius.sheet)
     }
-
+    
     // MARK: - Join Button
-
+    
     @ViewBuilder
     private var joinButton: some View {
-        if membershipStatus == .pending {
+        if vm.membershipStatus == .pending {
             Text("Request Pending")
                 .font(.appBody.weight(.semibold))
                 .foregroundStyle(.inkSecondary)
@@ -119,12 +134,12 @@ struct ClubDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 50))
                 .padding(.horizontal, Spacing.lg)
                 .padding(.bottom, Spacing.md)
-        } else if !isMember {
+        } else if !vm.isMember {
             Button {
-                Task { await joinClub() }
+                Task { await vm.joinClub(clubId: club.id, isPublic: club.isPublic) }
             } label: {
                 Group {
-                    if isJoining {
+                    if vm.isJoining {
                         ProgressView().tint(.white)
                     } else {
                         Text(club.isPublic ? "Join Club" : "Request to Join")
@@ -136,12 +151,12 @@ struct ClubDetailView: View {
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.lg)
             .padding(.bottom, Spacing.md)
-            .disabled(isJoining)
+            .disabled(vm.isJoining)
         }
     }
-
+    
     // MARK: - Tab Bar
-
+    
     private var tabBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -155,7 +170,7 @@ struct ClubDetailView: View {
                                 .foregroundStyle(selectedTab == tab ? .accent : .inkSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, Spacing.md)
-
+                            
                             Rectangle()
                                 .fill(selectedTab == tab ? Color.accentColor : Color.clear)
                                 .frame(height: 2)
@@ -166,42 +181,22 @@ struct ClubDetailView: View {
             Divider().background(Color.border)
         }
     }
-
+    
     // MARK: - Tab Content — delegates to separate view files
-
+    
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
         case .about:
             ClubAboutTab(club: club)
         case .book:
-            ClubBookTab(club: club, isMember: isMember)
+            ClubBookTab(club: club, isMember: vm.isMember, isOrganiser: vm.isOrganiser)
         case .board:
-            ClubBoardTab(club: club, isOrganiser: isOrganiser)
+            ClubBoardTab(club: club, isOrganiser: vm.isOrganiser)
         case .vote:
-            ClubVoteTab(club: club, isMember: isMember)
+            ClubVoteTab(club: club, isMember: vm.isMember)
         case .history:
             ClubHistoryTab(club: club)
-        }
-    }
-
-    // MARK: - Actions
-
-    private func loadMembership() async {
-        do {
-            membershipStatus = try await SupabaseService.shared.membershipStatus(clubId: club.id)
-            myRole = try await SupabaseService.shared.myRole(clubId: club.id)
-        } catch { }
-    }
-
-    private func joinClub() async {
-        isJoining = true
-        defer { isJoining = false }
-        do {
-            try await SupabaseService.shared.joinClub(clubId: club.id, isPublic: club.isPublic)
-            membershipStatus = club.isPublic ? .active : .pending
-        } catch {
-            self.error = AppError(underlying: error)
         }
     }
 }

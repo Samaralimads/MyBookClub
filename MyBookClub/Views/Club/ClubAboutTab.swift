@@ -51,23 +51,8 @@ struct ClubAboutTab: View {
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("Genres")
-                    .font(.appHeadline)
-                    .foregroundStyle(.inkPrimary)
-                HStack(spacing: Spacing.sm) {
-                    ForEach(club.genreTags.compactMap { Genre(rawValue: $0) }, id: \.rawValue) { genre in
-                        Text(genre.label)
-                            .font(.appCaption.weight(.semibold))
-                            .foregroundStyle(.accent)
-                            .padding(.horizontal, Spacing.md)
-                            .padding(.vertical, Spacing.xs)
-                            .background(Color.accentSubtle)
-                            .clipShape(Capsule())
-                    }
-                }
-            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
     }
 }

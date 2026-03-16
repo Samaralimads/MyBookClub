@@ -72,7 +72,7 @@ struct CreateClubView: View {
                 dismiss()
             }
         } message: {
-            Text("\"\(vm.createdClub?.name ?? "")\" is live. You can verify it in Supabase.")
+            Text("\"\(vm.createdClub?.name ?? "")\" is now live. Start inviting members and pick your first book.")
         }
     }
 

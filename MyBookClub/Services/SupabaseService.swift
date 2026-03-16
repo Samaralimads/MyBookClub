@@ -479,6 +479,17 @@ final class SupabaseService {
             .value
     }
     
+    func setCurrentBook(clubId: UUID, book: Book) async throws {
+        // 1. Cache the book (upsert) so it has a stable DB id
+        let saved = try await cacheBook(book)
+        // 2. Point the club at it
+        try await client
+            .from("clubs")
+            .update(["current_book_id": saved.id.uuidString])
+            .eq("id", value: clubId.uuidString)
+            .execute()
+    }
+    
     // MARK: - Reports
     
     func reportPost(postId: UUID, reason: String?) async throws {
