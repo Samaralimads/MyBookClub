@@ -14,6 +14,12 @@ struct ClubDetailView: View {
     @State private var vm = ClubDetailViewModel()
     @State private var selectedTab: ClubTab = .about
     @State private var showShare = false
+    @State private var currentClub: Club
+    
+    init(club: Club) {
+        self.club = club
+        self._currentClub = State(initialValue: club)
+    }
     
     enum ClubTab: String, CaseIterable {
         case about   = "About"
@@ -47,7 +53,7 @@ struct ClubDetailView: View {
                 ) {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(.white)
-
+                    
                 }
             }
         }
@@ -190,7 +196,15 @@ struct ClubDetailView: View {
         case .about:
             ClubAboutTab(club: club)
         case .book:
-            ClubBookTab(club: club, isMember: vm.isMember, isOrganiser: vm.isOrganiser)
+            ClubBookTab(
+                club: currentClub,
+                isMember: vm.isMember,
+                isOrganiser: vm.isOrganiser,
+                onBookChanged: { book in
+                    currentClub.currentBook = book
+                    currentClub.currentBookId = book.id
+                }
+            )
         case .board:
             ClubBoardTab(club: club, isOrganiser: vm.isOrganiser)
         case .vote:

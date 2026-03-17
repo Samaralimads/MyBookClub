@@ -11,10 +11,10 @@ struct ClubBookTab: View {
     let club: Club
     let isMember: Bool
     let isOrganiser: Bool
+    let onBookChanged: ((Book) -> Void)?
 
     @State private var vm = ClubBookViewModel()
     @State private var showBookSearch = false
-    // Local chapter draft so the stepper feels instant
     @State private var draftChapter: Int = 0
 
     var body: some View {
@@ -30,7 +30,7 @@ struct ClubBookTab: View {
             } else {
                 emptyState
             }
-
+            
             if isOrganiser {
                 setBookButton
             }
@@ -46,7 +46,10 @@ struct ClubBookTab: View {
         }
         .sheet(isPresented: $showBookSearch) {
             BookSearchSheet { selectedBook in
-                Task { await vm.setCurrentBook(club: club, book: selectedBook) }
+                Task {
+                    await vm.setCurrentBook(club: club, book: selectedBook)
+                    onBookChanged?(selectedBook)
+                }
             }
         }
     }
