@@ -12,7 +12,6 @@ final class ClubBookViewModel {
 
     // MARK: - State
 
-    private(set) var nextMeeting: Meeting?
     private(set) var readingProgress: ReadingProgress?
     var isSettingBook = false
     var error: AppError?
@@ -21,28 +20,39 @@ final class ClubBookViewModel {
 
     func load(club: Club, isMember: Bool) async {
         guard let book = club.currentBook else { return }
-        async let meetingResult = fetchNextMeeting(clubId: club.id)
-        async let progressResult = isMember ? fetchProgress(clubId: club.id, bookId: book.id) : nil
-
+        guard isMember else { return }
         do {
-            nextMeeting = try await meetingResult
-            readingProgress = try await progressResult
+            readingProgress = try await SupabaseService.shared.fetchReadingProgress(
+                clubId: club.id,
+                bookId: book.id
+            )
         } catch {
             self.error = AppError(underlying: error)
         }
     }
 
-    // MARK: - Reading progress
+    // MARK: - Toggle chapter completion
 
-    func updateProgress(clubId: UUID, bookId: UUID, chapter: Int) async {
+    func toggleChapter(clubId: UUID, bookId: UUID, chapter: Int) async {
+        var completed = Set(readingProgress?.completedChapters ?? [])
+        if completed.contains(chapter) {
+            completed.remove(chapter)
+        } else {
+            completed.insert(chapter)
+        }
+        let sorted = completed.sorted()
+
+        // Optimistic update
+        readingProgress?.completedChapters = sorted
+
         do {
             try await SupabaseService.shared.upsertReadingProgress(
                 clubId: clubId,
                 bookId: bookId,
-                currentChapter: chapter
+                completedChapters: sorted
             )
-            readingProgress?.currentChapter = chapter
         } catch {
+            // Roll back on failure
             self.error = AppError(underlying: error)
         }
     }
@@ -57,16 +67,5 @@ final class ClubBookViewModel {
         } catch {
             self.error = AppError(underlying: error)
         }
-    }
-
-    // MARK: - Private helpers
-
-    private func fetchNextMeeting(clubId: UUID) async throws -> Meeting? {
-        let meetings = try await SupabaseService.shared.fetchMeetings(clubId: clubId)
-        return meetings.first { $0.scheduledAt > .now }
-    }
-
-    private func fetchProgress(clubId: UUID, bookId: UUID) async throws -> ReadingProgress? {
-        try await SupabaseService.shared.fetchReadingProgress(clubId: clubId, bookId: bookId)
     }
 }

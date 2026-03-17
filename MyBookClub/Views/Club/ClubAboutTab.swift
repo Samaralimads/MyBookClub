@@ -9,9 +9,24 @@ import SwiftUI
 
 struct ClubAboutTab: View {
     let club: Club
+    let isOrganiser: Bool
+    let nextMeeting: Meeting?
+    let isScheduling: Bool
+    let onSchedule: (String, Date, Int?, Int?, [String]?, String?) -> Void
+
+    @State private var showPlanMeeting = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
+
+            // Meeting banner — always visible if a meeting exists
+            if let meeting = nextMeeting {
+                MeetingBannerView(
+                    meeting: meeting,
+                    isOrganiser: isOrganiser,
+                    onEdit: { showPlanMeeting = true }
+                )
+            }
 
             if let description = club.description {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -51,9 +66,33 @@ struct ClubAboutTab: View {
                     }
                 }
             }
+
+            if isOrganiser {
+                Button {
+                    showPlanMeeting = true
+                } label: {
+                    Label(
+                        nextMeeting == nil ? "Plan Next Meeting" : "Edit Meeting",
+                        systemImage: "calendar.badge.plus"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
+        .sheet(isPresented: $showPlanMeeting) {
+            PlanMeetingSheet(
+                existingMeeting: nextMeeting,
+                isScheduling: isScheduling,
+                onSchedule: { title, date, from, to, titles, address in
+                    onSchedule(title, date, from, to, titles, address)
+                    showPlanMeeting = false
+                },
+                onDismiss: { showPlanMeeting = false }
+            )
+        }
     }
 }
 

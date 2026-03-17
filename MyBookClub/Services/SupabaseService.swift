@@ -271,7 +271,9 @@ final class SupabaseService {
         clubId: UUID,
         title: String,
         scheduledAt: Date,
-        chaptersDue: Int?,
+        fromChapter: Int?,
+        toChapter: Int?,
+        chapterTitles: [String]?,
         notes: String?,
         address: String?
     ) async throws -> Meeting {
@@ -279,20 +281,24 @@ final class SupabaseService {
             let club_id: String
             let title: String
             let scheduled_at: String
-            let chapters_due: Int?
+            let from_chapter: Int?
+            let to_chapter: Int?
+            let chapter_titles: [String]?
             let notes: String?
             let address: String?
         }
-        
+
         let insert = MeetingInsert(
             club_id: clubId.uuidString,
             title: title,
             scheduled_at: ISO8601DateFormatter().string(from: scheduledAt),
-            chapters_due: chaptersDue,
+            from_chapter: fromChapter,
+            to_chapter: toChapter,
+            chapter_titles: chapterTitles,
             notes: notes,
             address: address
         )
-        
+
         return try await client
             .from("meetings")
             .insert(insert)
@@ -317,15 +323,23 @@ final class SupabaseService {
         return rows.first
     }
     
-    func upsertReadingProgress(clubId: UUID, bookId: UUID, currentChapter: Int) async throws {
+    func upsertReadingProgress(clubId: UUID, bookId: UUID, completedChapters: [Int]) async throws {
         guard let uid = currentUserID else { return }
-        try await client.from("reading_progress").upsert([
-            "club_id":         clubId.uuidString,
-            "user_id":         uid.uuidString,
-            "book_id":         bookId.uuidString,
-            "current_chapter": String(currentChapter),
-            "updated_at":      ISO8601DateFormatter().string(from: Date()),
-        ]).execute()
+        struct ProgressUpsert: Encodable {
+            let club_id: String
+            let user_id: String
+            let book_id: String
+            let completed_chapters: [Int]
+            let updated_at: String
+        }
+        let payload = ProgressUpsert(
+            club_id: clubId.uuidString,
+            user_id: uid.uuidString,
+            book_id: bookId.uuidString,
+            completed_chapters: completedChapters,
+            updated_at: ISO8601DateFormatter().string(from: .now)
+        )
+        try await client.from("reading_progress").upsert(payload).execute()
     }
     
     // MARK: - Posts (Board)

@@ -14,7 +14,9 @@ final class ClubDetailViewModel {
 
     private(set) var membershipStatus: MemberStatus?
     private(set) var myRole: MemberRole?
+    private(set) var nextMeeting: Meeting?
     var isJoining = false
+    var isScheduling = false
     var error: AppError?
 
     // MARK: - Derived
@@ -22,7 +24,7 @@ final class ClubDetailViewModel {
     var isMember: Bool    { membershipStatus == .active }
     var isOrganiser: Bool { myRole == .organiser }
 
-    // MARK: - Actions
+    // MARK: - Load
 
     func loadMembership(clubId: UUID) async {
         do {
@@ -31,12 +33,51 @@ final class ClubDetailViewModel {
         } catch { }
     }
 
+    func loadNextMeeting(clubId: UUID) async {
+        do {
+            let meetings = try await SupabaseService.shared.fetchMeetings(clubId: clubId)
+            nextMeeting = meetings.first { $0.scheduledAt > .now }
+        } catch { }
+    }
+
+    // MARK: - Join
+
     func joinClub(clubId: UUID, isPublic: Bool) async {
         isJoining = true
         defer { isJoining = false }
         do {
             try await SupabaseService.shared.joinClub(clubId: clubId, isPublic: isPublic)
             membershipStatus = isPublic ? .active : .pending
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    // MARK: - Schedule meeting (organiser only)
+
+    func scheduleMeeting(
+        clubId: UUID,
+        title: String,
+        scheduledAt: Date,
+        fromChapter: Int?,
+        toChapter: Int?,
+        chapterTitles: [String]?,
+        address: String?
+    ) async {
+        isScheduling = true
+        defer { isScheduling = false }
+        do {
+            let meeting = try await SupabaseService.shared.createMeeting(
+                clubId: clubId,
+                title: title,
+                scheduledAt: scheduledAt,
+                fromChapter: fromChapter,
+                toChapter: toChapter,
+                chapterTitles: chapterTitles,
+                notes: nil,
+                address: address
+            )
+            nextMeeting = meeting
         } catch {
             self.error = AppError(underlying: error)
         }

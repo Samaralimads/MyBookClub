@@ -9,18 +9,17 @@ import SwiftUI
 
 struct ClubDetailView: View {
     let club: Club
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var vm = ClubDetailViewModel()
     @State private var selectedTab: ClubTab = .about
-    @State private var showShare = false
     @State private var currentClub: Club
-    
+
     init(club: Club) {
         self.club = club
         self._currentClub = State(initialValue: club)
     }
-    
+
     enum ClubTab: String, CaseIterable {
         case about   = "About"
         case book    = "Book"
@@ -28,7 +27,7 @@ struct ClubDetailView: View {
         case vote    = "Vote"
         case history = "History"
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -43,7 +42,10 @@ struct ClubDetailView: View {
         }
         .background(Color.background)
         .ignoresSafeArea(edges: .top)
-        .task { await vm.loadMembership(clubId: club.id) }
+        .task {
+            await vm.loadMembership(clubId: club.id)
+            await vm.loadNextMeeting(clubId: club.id)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(
@@ -53,20 +55,18 @@ struct ClubDetailView: View {
                 ) {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(.white)
-                    
                 }
             }
         }
         .toolbarBackground(.hidden, for: .navigationBar)
     }
-    
-    // TODO: - update this URL
+
     private var shareURL: URL {
         URL(string: "https://mybookclub.app/club/\(club.id.uuidString)") ?? URL(string: "https://mybookclub.app")!
     }
-    
+
     // MARK: - Hero
-    
+
     private var heroHeader: some View {
         AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
             image.resizable().scaledToFill()
@@ -79,9 +79,9 @@ struct ClubDetailView: View {
         .frame(maxWidth: .infinity, minHeight: 260)
         .clipped()
     }
-    
-    // MARK: - Club Info (white sheet over hero)
-    
+
+    // MARK: - Club Info
+
     private var clubInfo: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if let firstGenre = club.genreTags.first,
@@ -91,16 +91,16 @@ struct ClubDetailView: View {
                     .foregroundStyle(.accent)
                     .tracking(0.8)
             }
-            
+
             Text(club.name)
                 .font(.appTitle)
                 .foregroundStyle(.inkPrimary)
-            
+
             HStack(spacing: Spacing.xl) {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
                         .font(.system(size: 14))
-                    Text("\(club.memberCount ?? 0) Members")
+                    Text("^[\(club.memberCount ?? 0) Member](inflect: true)")
                         .font(.appBody)
                 }
                 HStack(spacing: 6) {
@@ -125,9 +125,9 @@ struct ClubDetailView: View {
         .offset(y: -CornerRadius.sheet)
         .padding(.bottom, -CornerRadius.sheet)
     }
-    
+
     // MARK: - Join Button
-    
+
     @ViewBuilder
     private var joinButton: some View {
         if vm.membershipStatus == .pending {
@@ -160,9 +160,9 @@ struct ClubDetailView: View {
             .disabled(vm.isJoining)
         }
     }
-    
+
     // MARK: - Tab Bar
-    
+
     private var tabBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
@@ -176,7 +176,7 @@ struct ClubDetailView: View {
                                 .foregroundStyle(selectedTab == tab ? .accent : .inkSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, Spacing.md)
-                            
+
                             Rectangle()
                                 .fill(selectedTab == tab ? Color.accentColor : Color.clear)
                                 .frame(height: 2)
@@ -187,19 +187,38 @@ struct ClubDetailView: View {
             Divider().background(Color.border)
         }
     }
-    
-    // MARK: - Tab Content — delegates to separate view files
-    
+
+    // MARK: - Tab Content
+
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
         case .about:
-            ClubAboutTab(club: club)
+            ClubAboutTab(
+                club: club,
+                isOrganiser: vm.isOrganiser,
+                nextMeeting: vm.nextMeeting,
+                isScheduling: vm.isScheduling,
+                onSchedule: { title, date, from, to, titles, address in
+                    Task {
+                        await vm.scheduleMeeting(
+                            clubId: club.id,
+                            title: title,
+                            scheduledAt: date,
+                            fromChapter: from,
+                            toChapter: to,
+                            chapterTitles: titles,
+                            address: address
+                        )
+                    }
+                }
+            )
         case .book:
             ClubBookTab(
                 club: currentClub,
                 isMember: vm.isMember,
                 isOrganiser: vm.isOrganiser,
+                nextMeeting: vm.nextMeeting,
                 onBookChanged: { book in
                     currentClub.currentBook = book
                     currentClub.currentBookId = book.id
@@ -220,7 +239,7 @@ struct ClubDetailView: View {
         id: UUID(),
         organiserId: nil,
         name: "Downtown Fiction Readers",
-        description: "A friendly group of fiction lovers meeting bi-weekly to discuss contemporary and literary fiction. All are welcome, whether you've finished the book or not!",
+        description: "A friendly group of fiction lovers meeting bi-weekly.",
         coverImageURL: nil,
         genreTags: ["literary-fiction"],
         cityLabel: "Blue Bottle Coffee, Downtown",
@@ -229,7 +248,7 @@ struct ClubDetailView: View {
         recurringDay: "Saturday",
         recurringTime: "14:00",
         currentBookId: nil,
-        createdAt: Date(),
+        createdAt: Date.now,
         memberCount: 14
     ))
 }
