@@ -61,7 +61,7 @@ struct ClubBookTab: View {
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("Reading Now")
-                    .font(.appCaption.weight(.semibold))
+                    .font(.appCaption.bold())
                     .foregroundStyle(.accent)
                     .tracking(0.6)
                 Text(book.title)
@@ -85,7 +85,7 @@ struct ClubBookTab: View {
                                 .foregroundStyle(.inkSecondary)
                             Spacer()
                             Text("\(Int(progress * 100))%")
-                                .font(.appCaption.weight(.semibold))
+                                .font(.appCaption.bold())
                                 .foregroundStyle(.inkSecondary)
                         }
                         ProgressView(value: progress)
@@ -111,8 +111,7 @@ struct ClubBookTab: View {
                     ChapterChecklistRow(
                         chapter: chapter,
                         title: meeting.title(for: chapter),
-                        isChecked: vm.readingProgress?.isCompleted(chapter) ?? false,
-                        isInteractive: isMember || isOrganiser
+                        isChecked: vm.readingProgress?.isCompleted(chapter) ?? false
                     ) {
                         Task {
                             await vm.toggleChapter(
@@ -171,7 +170,6 @@ struct ChapterChecklistRow: View {
     let chapter: Int
     let title: String?
     let isChecked: Bool
-    let isInteractive: Bool
     let onToggle: () -> Void
 
     var body: some View {
@@ -188,18 +186,17 @@ struct ChapterChecklistRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 if let title {
                     Text("Chapter \(chapter): \(title)")
-                        .font(.appBody.weight(.semibold))
+                        .font(.appBody.bold())
                         .foregroundStyle(.inkPrimary)
                 } else {
                     Text("Chapter \(chapter)")
-                        .font(.appBody.weight(.semibold))
+                        .font(.appBody.bold())
                         .foregroundStyle(.inkPrimary)
                 }
             }
 
             Spacer()
 
-            if isInteractive {
                 Button(action: onToggle) {
                     ZStack {
                         Circle()
@@ -218,12 +215,6 @@ struct ChapterChecklistRow: View {
                 }
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)
-            } else {
-                // Non-member: show static indicator
-                Circle()
-                    .strokeBorder(Color.border, lineWidth: 1.5)
-                    .frame(width: 28, height: 28)
-            }
         }
         .padding(Spacing.md)
         .background(Color.cardBackground)

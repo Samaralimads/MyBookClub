@@ -17,6 +17,7 @@ struct Meeting: Codable, Identifiable, Hashable {
     var chapterTitles: [String]?
     var notes: String?
     var address: String?
+    var isFinal: Bool
     var notifSent24h: Bool
     var notifSent1h: Bool
     let createdAt: Date
@@ -34,6 +35,7 @@ struct Meeting: Codable, Identifiable, Hashable {
         case chapterTitles = "chapter_titles"
         case notes
         case address
+        case isFinal       = "is_final"
         case notifSent24h  = "notif_sent_24h"
         case notifSent1h   = "notif_sent_1h"
         case createdAt     = "created_at"

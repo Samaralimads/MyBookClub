@@ -20,16 +20,13 @@ struct Club: Codable, Identifiable, Hashable {
     var isPublic: Bool
     var memberCap: Int
     var recurringDay: String?
-    var recurringTime: String?   // "HH:mm:ss" from PostgreSQL time
+    var recurringTime: String?
     var currentBookId: UUID?
     let createdAt: Date
 
-    // Joined fields (populated by joins / RPC)
     var currentBook: Book?
     var memberCount: Int?
 
-    // Returned by nearby_clubs RPC — distance in metres from user's location.
-    // nil when fetched directly (e.g. fetchClub by ID).
     var distanceMeters: Double?
 
     enum CodingKeys: String, CodingKey {

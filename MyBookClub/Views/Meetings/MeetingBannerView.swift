@@ -7,15 +7,12 @@
 
 import SwiftUI
 
-// The organiser sees an edit (pencil) button; members see the card as-is.
 struct MeetingBannerView: View {
     let meeting: Meeting
-    let isOrganiser: Bool
-    let onEdit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
-            HStack(alignment: .top) {
+            
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Upcoming Meeting")
                         .font(.appHeadline)
@@ -24,17 +21,6 @@ struct MeetingBannerView: View {
                         .font(.appBody)
                         .foregroundStyle(.inkSecondary)
                 }
-                Spacer()
-                if isOrganiser {
-                    Button(action: onEdit) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.inkSecondary)
-                            .frame(width: 44, height: 44)
-                            .contentShape(.rect)
-                    }
-                }
-            }
 
             VStack(alignment: .leading, spacing: Spacing.md) {
                 meetingRow(

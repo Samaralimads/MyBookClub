@@ -39,6 +39,17 @@ final class ClubDetailViewModel {
             nextMeeting = meetings.first { $0.scheduledAt > .now }
         } catch { }
     }
+    
+    // MARK: - Load Club's latest state
+
+    func reloadClub(clubId: UUID) async -> Club? {
+        do {
+            return try await SupabaseService.shared.fetchClub(id: clubId)
+        } catch {
+            self.error = AppError(underlying: error)
+            return nil
+        }
+    }
 
     // MARK: - Join
 
@@ -62,7 +73,8 @@ final class ClubDetailViewModel {
         fromChapter: Int?,
         toChapter: Int?,
         chapterTitles: [String]?,
-        address: String?
+        address: String?,
+        isFinal: Bool
     ) async {
         isScheduling = true
         defer { isScheduling = false }
@@ -75,7 +87,8 @@ final class ClubDetailViewModel {
                 toChapter: toChapter,
                 chapterTitles: chapterTitles,
                 notes: nil,
-                address: address
+                address: address,
+                isFinal: isFinal
             )
             nextMeeting = meeting
         } catch {

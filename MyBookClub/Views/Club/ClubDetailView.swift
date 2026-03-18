@@ -45,6 +45,9 @@ struct ClubDetailView: View {
         .task {
             await vm.loadMembership(clubId: club.id)
             await vm.loadNextMeeting(clubId: club.id)
+            if let fresh = await vm.reloadClub(clubId: club.id) {
+                currentClub = fresh
+            }
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -199,7 +202,7 @@ struct ClubDetailView: View {
                 isOrganiser: vm.isOrganiser,
                 nextMeeting: vm.nextMeeting,
                 isScheduling: vm.isScheduling,
-                onSchedule: { title, date, from, to, titles, address in
+                onSchedule: { title, date, from, to, titles, address, isFinal in
                     Task {
                         await vm.scheduleMeeting(
                             clubId: club.id,
@@ -208,7 +211,8 @@ struct ClubDetailView: View {
                             fromChapter: from,
                             toChapter: to,
                             chapterTitles: titles,
-                            address: address
+                            address: address,
+                            isFinal: isFinal
                         )
                     }
                 }

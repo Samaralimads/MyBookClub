@@ -11,7 +11,7 @@ import MapKit
 struct PlanMeetingSheet: View {
     let existingMeeting: Meeting?
     let isScheduling: Bool
-    let onSchedule: (String, Date, Int?, Int?, [String]?, String?) -> Void
+    let onSchedule: (String, Date, Int?, Int?, [String]?, String?, Bool) -> Void
     let onDismiss: () -> Void
 
     @State private var fromChapterText = ""
@@ -21,6 +21,7 @@ struct PlanMeetingSheet: View {
     @State private var date = Date.now
     @State private var locationText = ""
     @State private var placeSearch  = PlaceSearchService()
+    @State private var isFinalMeeting = false
 
     // MARK: - Derived
 
@@ -40,6 +41,7 @@ struct PlanMeetingSheet: View {
                     readingAssignmentSection
                     dateTimeSection
                     locationSection
+                    finalMeetingSection
                     Spacer()
                     actionButtons
 
@@ -306,7 +308,27 @@ struct PlanMeetingSheet: View {
             }
         }
     }
+    // MARK: - Final Meeting toggle
 
+    private var finalMeetingSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Toggle(isOn: $isFinalMeeting) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Final meeting for this book")
+                        .font(.appHeadline)
+                        .foregroundStyle(.inkPrimary)
+                    Text("After this meeting ends, the book moves to History.")
+                        .font(.appCaption)
+                        .foregroundStyle(.inkSecondary)
+                }
+            }
+            .tint(.accent)
+            .padding(Spacing.md)
+            .background(Color.cardBackground)
+            .clipShape(.rect(cornerRadius: CornerRadius.card))
+        }
+    }
+    
     // MARK: - Action Buttons
 
     private var actionButtons: some View {
@@ -334,7 +356,8 @@ struct PlanMeetingSheet: View {
                     from,
                     to,
                     titlesToSend,
-                    locationText.isEmpty ? nil : locationText
+                    locationText.isEmpty ? nil : locationText,
+                    isFinalMeeting
                 )
             } label: {
                 Group {
@@ -378,6 +401,7 @@ struct PlanMeetingSheet: View {
         toChapterText   = m.toChapter.map(String.init) ?? ""
         date            = m.scheduledAt
         locationText    = m.address ?? ""
+        isFinalMeeting = m.isFinal
         if let titles = m.chapterTitles, !titles.isEmpty {
             includeChapterTitles = true
             chapterTitles = titles
@@ -390,7 +414,7 @@ struct PlanMeetingSheet: View {
     PlanMeetingSheet(
         existingMeeting: nil,
         isScheduling: false,
-        onSchedule: { _, _, _, _, _, _ in },
+        onSchedule: { _, _, _, _, _, _, _ in },
         onDismiss: {}
     )
 }

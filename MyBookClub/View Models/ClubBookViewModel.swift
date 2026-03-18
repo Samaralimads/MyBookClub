@@ -19,6 +19,7 @@ final class ClubBookViewModel {
     // MARK: - Load
 
     func load(club: Club, isMember: Bool) async {
+        await checkAndArchiveIfNeeded(club: club)
         guard let book = club.currentBook else { return }
         guard isMember else { return }
         do {
@@ -42,7 +43,7 @@ final class ClubBookViewModel {
         }
         let sorted = completed.sorted()
 
-        // Optimistic update
+        // Optimistic update — only works if readingProgress already exists
         readingProgress?.completedChapters = sorted
 
         do {
@@ -51,8 +52,14 @@ final class ClubBookViewModel {
                 bookId: bookId,
                 completedChapters: sorted
             )
+
+            if readingProgress == nil {
+                readingProgress = try await SupabaseService.shared.fetchReadingProgress(
+                    clubId: clubId,
+                    bookId: bookId
+                )
+            }
         } catch {
-            // Roll back on failure
             self.error = AppError(underlying: error)
         }
     }
@@ -64,6 +71,23 @@ final class ClubBookViewModel {
         defer { isSettingBook = false }
         do {
             try await SupabaseService.shared.setCurrentBook(clubId: club.id, book: book)
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    // MARK: - Auto-archive check
+
+    func checkAndArchiveIfNeeded(club: Club) async {
+        guard let bookId = club.currentBookId else { return }
+        do {
+            guard let finalMeeting = try await SupabaseService.shared.fetchFinalMeeting(clubId: club.id)
+            else { return }
+
+            // Only archive once the meeting date/time has passed
+            guard finalMeeting.scheduledAt < Date.now else { return }
+
+            try await SupabaseService.shared.archiveBook(clubId: club.id, bookId: bookId)
         } catch {
             self.error = AppError(underlying: error)
         }

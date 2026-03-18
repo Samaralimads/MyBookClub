@@ -12,7 +12,6 @@ struct ReadingProgress: Codable, Identifiable, Equatable {
     let clubId: UUID
     let userId: UUID
     let bookId: UUID
-    //Chapter numbers the member has checked off for the current meeting assignment.
     var completedChapters: [Int]
     var updatedAt: Date
 

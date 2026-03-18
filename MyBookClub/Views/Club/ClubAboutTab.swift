@@ -12,7 +12,7 @@ struct ClubAboutTab: View {
     let isOrganiser: Bool
     let nextMeeting: Meeting?
     let isScheduling: Bool
-    let onSchedule: (String, Date, Int?, Int?, [String]?, String?) -> Void
+    let onSchedule: (String, Date, Int?, Int?, [String]?, String?, Bool) -> Void
 
     @State private var showPlanMeeting = false
 
@@ -23,8 +23,6 @@ struct ClubAboutTab: View {
             if let meeting = nextMeeting {
                 MeetingBannerView(
                     meeting: meeting,
-                    isOrganiser: isOrganiser,
-                    onEdit: { showPlanMeeting = true }
                 )
             }
 
@@ -86,8 +84,8 @@ struct ClubAboutTab: View {
             PlanMeetingSheet(
                 existingMeeting: nextMeeting,
                 isScheduling: isScheduling,
-                onSchedule: { title, date, from, to, titles, address in
-                    onSchedule(title, date, from, to, titles, address)
+                onSchedule: { title, date, from, to, titles, address, isFinal in
+                    onSchedule(title, date, from, to, titles, address, isFinal)
                     showPlanMeeting = false
                 },
                 onDismiss: { showPlanMeeting = false }
