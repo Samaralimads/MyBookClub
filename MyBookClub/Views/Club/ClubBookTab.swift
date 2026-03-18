@@ -13,6 +13,7 @@ struct ClubBookTab: View {
     let isOrganiser: Bool
     let nextMeeting: Meeting?
     let onBookChanged: ((Book) -> Void)?
+    let onArchived: (() -> Void)?
 
     @State private var vm = ClubBookViewModel()
     @State private var showBookSearch = false
@@ -35,7 +36,12 @@ struct ClubBookTab: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
-        .task { await vm.load(club: club, isMember: isMember) }
+        .task {
+            let archived = await vm.load(club: club, isMember: isMember)
+            if archived {
+                onArchived?()
+            }
+        }
         .sheet(isPresented: $showBookSearch) {
             BookSearchSheet { selectedBook in
                 Task {
@@ -197,24 +203,24 @@ struct ChapterChecklistRow: View {
 
             Spacer()
 
-                Button(action: onToggle) {
-                    ZStack {
-                        Circle()
-                            .fill(isChecked ? Color.accent : Color.clear)
-                            .frame(width: 28, height: 28)
-                        Circle()
-                            .strokeBorder(isChecked ? Color.accent : Color.border, lineWidth: 1.5)
-                            .frame(width: 28, height: 28)
-                        if isChecked {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
+            Button(action: onToggle) {
+                ZStack {
+                    Circle()
+                        .fill(isChecked ? Color.accent : Color.clear)
+                        .frame(width: 28, height: 28)
+                    Circle()
+                        .strokeBorder(isChecked ? Color.accent : Color.border, lineWidth: 1.5)
+                        .frame(width: 28, height: 28)
+                    if isChecked {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
                     }
-                    .animation(.spring(duration: 0.2), value: isChecked)
                 }
-                .frame(width: 44, height: 44)
-                .contentShape(.rect)
+                .animation(.spring(duration: 0.2), value: isChecked)
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(.rect)
         }
         .padding(Spacing.md)
         .background(Color.cardBackground)

@@ -226,6 +226,13 @@ struct ClubDetailView: View {
                 onBookChanged: { book in
                     currentClub.currentBook = book
                     currentClub.currentBookId = book.id
+                },
+                onArchived: {
+                    Task { @MainActor in
+                        if let fresh = await vm.reloadClub(clubId: club.id) {
+                            currentClub = fresh
+                        }
+                    }
                 }
             )
         case .board:

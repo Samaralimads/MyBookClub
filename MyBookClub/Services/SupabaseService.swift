@@ -336,7 +336,7 @@ final class SupabaseService {
             let club_id: String
             let book_id: String
         }
-
+        
         try await client
             .from("club_book_history")
             .upsert(
@@ -347,14 +347,12 @@ final class SupabaseService {
                 onConflict: "club_id,book_id"
             )
             .execute()
-
-        struct ClearBook: Encodable {
-            let current_book_id: String? = nil
-        }
+        
+        let clearBook: [String: AnyJSON] = ["current_book_id": .null]
 
         try await client
             .from("clubs")
-            .update(ClearBook())
+            .update(clearBook)
             .eq("id", value: clubId.uuidString)
             .execute()
     }

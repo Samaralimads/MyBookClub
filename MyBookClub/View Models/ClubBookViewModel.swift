@@ -18,10 +18,11 @@ final class ClubBookViewModel {
 
     // MARK: - Load
 
-    func load(club: Club, isMember: Bool) async {
-        await checkAndArchiveIfNeeded(club: club)
-        guard let book = club.currentBook else { return }
-        guard isMember else { return }
+    func load(club: Club, isMember: Bool) async -> Bool {
+        let archived = await checkAndArchiveIfNeeded(club: club)
+        if archived { return true }
+        guard let book = club.currentBook else { return false }
+        guard isMember else { return false }
         do {
             readingProgress = try await SupabaseService.shared.fetchReadingProgress(
                 clubId: club.id,
@@ -30,6 +31,7 @@ final class ClubBookViewModel {
         } catch {
             self.error = AppError(underlying: error)
         }
+        return false
     }
 
     // MARK: - Toggle chapter completion
@@ -78,18 +80,17 @@ final class ClubBookViewModel {
 
     // MARK: - Auto-archive check
 
-    func checkAndArchiveIfNeeded(club: Club) async {
-        guard let bookId = club.currentBookId else { return }
+    func checkAndArchiveIfNeeded(club: Club) async -> Bool {
+        guard let bookId = club.currentBookId else { return false }
         do {
             guard let finalMeeting = try await SupabaseService.shared.fetchFinalMeeting(clubId: club.id)
-            else { return }
-
-            // Only archive once the meeting date/time has passed
-            guard finalMeeting.scheduledAt < Date.now else { return }
-
+            else { return false }
+            guard finalMeeting.scheduledAt < Date.now else { return false }
             try await SupabaseService.shared.archiveBook(clubId: club.id, bookId: bookId)
+            return true
         } catch {
             self.error = AppError(underlying: error)
+            return false
         }
     }
 }
