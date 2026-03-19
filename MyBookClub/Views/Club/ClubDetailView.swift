@@ -14,6 +14,7 @@ struct ClubDetailView: View {
     @State private var vm = ClubDetailViewModel()
     @State private var selectedTab: ClubTab = .about
     @State private var currentClub: Club
+    @State private var showSettings = false
 
     init(club: Club) {
         self.club = club
@@ -50,18 +51,40 @@ struct ClubDetailView: View {
             }
         }
         .toolbar {
+            if vm.isOrganiser {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("", systemImage: "gearshape") {
+                        showSettings = true
+                    }
+                    .tint(.black)
+                }
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(
                     item: shareURL,
-                    subject: Text(club.name),
-                    message: Text("Join me at \(club.name) on MyBookClub!")
+                    subject: Text(currentClub.name),
+                    message: Text("Join me at \(currentClub.name) on MyBookClub!")
                 ) {
                     Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.black)
                 }
             }
         }
         .toolbarBackground(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                CreateClubView(
+                    club: currentClub,
+                    onClubUpdated: { updated in
+                        currentClub = updated
+                    },
+                    onClubDeleted: {
+                        dismiss()
+                    }
+                )
+            }
+        }
     }
 
     private var shareURL: URL {
@@ -71,7 +94,7 @@ struct ClubDetailView: View {
     // MARK: - Hero
 
     private var heroHeader: some View {
-        AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
+        AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }) { image in
             image.resizable().scaledToFill()
         } placeholder: {
             LinearGradient(
@@ -87,7 +110,7 @@ struct ClubDetailView: View {
 
     private var clubInfo: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            if let firstGenre = club.genreTags.first,
+            if let firstGenre = currentClub.genreTags.first,
                let genre = Genre(rawValue: firstGenre) {
                 Text(genre.label.uppercased())
                     .font(.appCaption.weight(.bold))
@@ -95,7 +118,7 @@ struct ClubDetailView: View {
                     .tracking(0.8)
             }
 
-            Text(club.name)
+            Text(currentClub.name)
                 .font(.appTitle)
                 .foregroundStyle(.inkPrimary)
 
@@ -103,13 +126,13 @@ struct ClubDetailView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
                         .font(.system(size: 14))
-                    Text("^[\(club.memberCount ?? 0) Member](inflect: true)")
+                    Text("^[\(currentClub.memberCount ?? 0) Member](inflect: true)")
                         .font(.appBody)
                 }
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.system(size: 14))
-                    Text(club.cityLabel)
+                    Text(currentClub.cityLabel)
                         .font(.appBody)
                         .lineLimit(1)
                 }
@@ -134,10 +157,8 @@ struct ClubDetailView: View {
     @ViewBuilder
     private var joinButton: some View {
         if vm.isOrganiser {
-            // Organiser sees nothing
             EmptyView()
         } else if vm.membershipStatus == .pending {
-            // Pending request — greyed out, not tappable
             HStack(spacing: Spacing.sm) {
                 Image(systemName: "clock")
                     .font(.system(size: 15))
@@ -152,16 +173,13 @@ struct ClubDetailView: View {
             .padding(.horizontal, Spacing.lg)
             .padding(.bottom, Spacing.md)
         } else if vm.isMember {
-            // Already a member — joined button with dropdown
             Menu {
                 Button(role: .none) {
-                    // TODO: notification preferences in a future part
+                    // TODO: notification preferences
                 } label: {
                     Label("Manage Notifications", systemImage: "bell")
                 }
-
                 Divider()
-
                 Button(role: .destructive) {
                     Task { await vm.leaveClub(clubId: club.id) }
                 } label: {
@@ -185,7 +203,6 @@ struct ClubDetailView: View {
             .padding(.horizontal, Spacing.lg)
             .padding(.bottom, Spacing.md)
         } else {
-            // Not a member yet — primary join button
             Button {
                 Task { await vm.joinClub(clubId: club.id, isPublic: club.isPublic) }
             } label: {
@@ -205,6 +222,7 @@ struct ClubDetailView: View {
             .disabled(vm.isJoining)
         }
     }
+
     // MARK: - Tab Bar
 
     private var tabBar: some View {
@@ -239,7 +257,7 @@ struct ClubDetailView: View {
         switch selectedTab {
         case .about:
             ClubAboutTab(
-                club: club,
+                club: currentClub,
                 isOrganiser: vm.isOrganiser,
                 nextMeeting: vm.nextMeeting,
                 isScheduling: vm.isScheduling,
@@ -277,11 +295,11 @@ struct ClubDetailView: View {
                 }
             )
         case .board:
-            ClubBoardTab(club: club, isOrganiser: vm.isOrganiser)
+            ClubBoardTab(club: currentClub, isOrganiser: vm.isOrganiser)
         case .vote:
-            ClubVoteTab(club: club, isMember: vm.isMember)
+            ClubVoteTab(club: currentClub, isMember: vm.isMember)
         case .history:
-            ClubHistoryTab(club: club)
+            ClubHistoryTab(club: currentClub)
         }
     }
 }
@@ -300,7 +318,7 @@ struct ClubDetailView: View {
         recurringDay: "Saturday",
         recurringTime: "14:00",
         currentBookId: nil,
-        createdAt: Date.now,
+        createdAt: .now,
         memberCount: 14
     ))
 }

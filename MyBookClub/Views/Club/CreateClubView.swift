@@ -11,12 +11,35 @@ import PhotosUI
 struct CreateClubView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var vm = CreateClubViewModel()
-    @State private var locationSvc = LocationService()
-    @State private var citySearch  = CitySearchService()
-    @State private var showSuccess = false
+    @State private var vm: CreateClubViewModel
+    @State private var locationSvc  = LocationService()
+    @State private var citySearch   = CitySearchService()
+    @State private var showSuccess  = false
 
     var onClubCreated: ((Club) -> Void)?
+    var onClubUpdated: ((Club) -> Void)?
+    var onClubDeleted: (() -> Void)?
+
+    // MARK: - Init
+
+    // Create mode
+    init(onClubCreated: ((Club) -> Void)? = nil) {
+        _vm = State(initialValue: CreateClubViewModel(mode: .create))
+        self.onClubCreated = onClubCreated
+    }
+
+    // Edit mode
+    init(
+        club: Club,
+        onClubUpdated: ((Club) -> Void)? = nil,
+        onClubDeleted: (() -> Void)? = nil
+    ) {
+        _vm = State(initialValue: CreateClubViewModel(mode: .edit(club)))
+        self.onClubUpdated = onClubUpdated
+        self.onClubDeleted = onClubDeleted
+    }
+
+    // MARK: - Body
 
     var body: some View {
         ZStack {
@@ -41,24 +64,31 @@ struct CreateClubView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
+                    // Primary action button
                     Button {
-                        Task { await handleCreate() }
+                        Task { await handlePrimaryAction() }
                     } label: {
-                        Text("Create Club")
+                        Text(vm.mode.isEditing ? "Save Changes" : "Create Club")
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(!vm.canCreate || vm.isLoading)
                     .padding(.top, Spacing.sm)
-                    .padding(.bottom, Spacing.xxl)
+
+                    // Delete — edit mode only
+                    if vm.mode.isEditing {
+                        dangerZoneSection
+                    }
+
+                    Spacer().frame(height: Spacing.xxl)
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.top, Spacing.lg)
             }
             .scrollIndicators(.hidden)
 
-            if vm.isLoading { LoadingOverlay() }
+            if vm.isLoading || vm.isDeleting { LoadingOverlay() }
         }
-        .navigationTitle("Create a Club")
+        .navigationTitle(vm.mode.isEditing ? "Club Settings" : "Create a Club")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -66,6 +96,7 @@ struct CreateClubView: View {
                     .foregroundStyle(.accent)
             }
         }
+        // Success alert — create mode
         .alert("Club Created! 🎉", isPresented: $showSuccess) {
             Button("Let's go!") {
                 if let club = vm.createdClub { onClubCreated?(club) }
@@ -73,6 +104,19 @@ struct CreateClubView: View {
             }
         } message: {
             Text("\"\(vm.createdClub?.name ?? "")\" is now live. Start inviting members and pick your first book.")
+        }
+        // Delete confirmation
+        .confirmationDialog(
+            "Delete \"\(vm.mode.existingClub?.name ?? "this club")\"?",
+            isPresented: $vm.showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Club", role: .destructive) {
+                Task { await handleDelete() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete the club and all its data. This cannot be undone.")
         }
     }
 
@@ -87,6 +131,7 @@ struct CreateClubView: View {
                 photoLibrary: .shared()
             ) {
                 ZStack {
+                    // Show newly picked image first, then fall back to existing remote URL
                     if let image = vm.coverImage {
                         Image(uiImage: image)
                             .resizable()
@@ -96,41 +141,63 @@ struct CreateClubView: View {
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
                             .overlay(alignment: .bottomTrailing) {
-                                Label("Change", systemImage: "pencil")
-                                    .font(.appCaption.weight(.semibold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, Spacing.md)
-                                    .padding(.vertical, Spacing.xs)
-                                    .background(.black.opacity(0.45))
-                                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.badge))
-                                    .padding(Spacing.sm)
+                                changeBadge
                             }
-                    } else {
-                        VStack(spacing: Spacing.md) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 28))
-                                .foregroundStyle(.accent)
-                            Text("Upload cover image")
-                                .font(.appBody.weight(.medium))
-                                .foregroundStyle(.inkPrimary)
-                            Text("Recommended: 1200×400px")
-                                .font(.appCaption)
-                                .foregroundStyle(.inkSecondary)
+                    } else if let urlString = vm.existingCoverURL,
+                              let url = URL(string: urlString) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Color.accentSubtle
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 140)
-                        .background(Color.accentSubtle.opacity(0.5))
+                        .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: CornerRadius.card)
-                                .strokeBorder(
-                                    style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
-                                )
-                                .foregroundStyle(Color.accentColor.opacity(0.5))
+                        .overlay(alignment: .bottomTrailing) {
+                            changeBadge
                         }
+                    } else {
+                        uploadPlaceholder
                     }
                 }
             }
+        }
+    }
+
+    private var changeBadge: some View {
+        Label("Change", systemImage: "pencil")
+            .font(.appCaption.weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.xs)
+            .background(.black.opacity(0.45))
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.badge))
+            .padding(Spacing.sm)
+    }
+
+    private var uploadPlaceholder: some View {
+        VStack(spacing: Spacing.md) {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 28))
+                .foregroundStyle(.accent)
+            Text("Upload cover image")
+                .font(.appBody.weight(.medium))
+                .foregroundStyle(.inkPrimary)
+            Text("Recommended: 1200×400px")
+                .font(.appCaption)
+                .foregroundStyle(.inkSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 140)
+        .background(Color.accentSubtle.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+        .overlay {
+            RoundedRectangle(cornerRadius: CornerRadius.card)
+                .strokeBorder(
+                    style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                )
+                .foregroundStyle(Color.accentColor.opacity(0.5))
         }
     }
 
@@ -214,7 +281,6 @@ struct CreateClubView: View {
             SectionLabel("City / Neighbourhood *")
 
             VStack(alignment: .leading, spacing: 0) {
-                // Text field
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "mappin")
                         .font(.system(size: 15))
@@ -249,7 +315,6 @@ struct CreateClubView: View {
                     .stroke(Color.border, lineWidth: 1)
                 }
 
-                // Suggestions dropdown
                 if !citySearch.suggestions.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(citySearch.suggestions.enumerated()), id: \.element) { index, suggestion in
@@ -475,11 +540,59 @@ struct CreateClubView: View {
         }
     }
 
+    // MARK: - Danger Zone (edit mode only)
+
+    private var dangerZoneSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Divider()
+                .padding(.vertical, Spacing.sm)
+
+            Text("Danger Zone")
+                .font(.appBody.weight(.semibold))
+                .foregroundStyle(.red)
+
+            Button {
+                vm.showDeleteConfirm = true
+            } label: {
+                Label("Delete Club", systemImage: "trash")
+                    .font(.appBody.weight(.semibold))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.cardBackground)
+                    .clipShape(.rect(cornerRadius: CornerRadius.button))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: CornerRadius.button)
+                            .stroke(Color.red, lineWidth: 1.5)
+                    }
+            }
+            .disabled(vm.isDeleting)
+        }
+    }
+
     // MARK: - Actions
 
-    private func handleCreate() async {
-        await vm.createClub(locationService: locationSvc)
-        if vm.createdClub != nil { showSuccess = true }
+    private func handlePrimaryAction() async {
+        if vm.mode.isEditing {
+            await vm.updateClub(locationService: locationSvc)
+            if let updated = vm.createdClub {
+                onClubUpdated?(updated)
+                dismiss()
+            }
+        } else {
+            await vm.createClub(locationService: locationSvc)
+            if vm.createdClub != nil {
+                showSuccess = true
+            }
+        }
+    }
+
+    private func handleDelete() async {
+        await vm.deleteClub()
+        if vm.error == nil {
+            onClubDeleted?()
+            dismiss()
+        }
     }
 }
 
@@ -551,8 +664,32 @@ private struct VisibilityOption: View {
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Create mode") {
     NavigationStack {
         CreateClubView()
+    }
+}
+
+#Preview("Edit mode") {
+    NavigationStack {
+        CreateClubView(
+            club: Club(
+                id: UUID(),
+                organiserId: nil,
+                name: "Downtown Fiction Readers",
+                description: "A friendly group of fiction lovers meeting bi-weekly.",
+                coverImageURL: nil,
+                genreTags: ["literary-fiction"],
+                cityLabel: "Blue Bottle Coffee, Downtown",
+                isPublic: true,
+                memberCap: 20,
+                recurringDay: "Saturday",
+                recurringTime: "19:00:00",
+                createdAt: .now,
+                memberCount: 14
+            )
+        )
     }
 }

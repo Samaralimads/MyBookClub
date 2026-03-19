@@ -41,10 +41,10 @@ struct ClubCard: View {
                     if let role = userRole {
                         Text(role == .organiser ? "ORGANIZER" : "MEMBER")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(role == .organiser ? .accentSubtle : .accentColor)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Color.accentSubtle)
+                            .background(role == .organiser ? Color.accentColor : Color.accentSubtle)
                             .clipShape(.rect(cornerRadius: CornerRadius.button))
                     }
                 }
@@ -115,7 +115,7 @@ struct ClubCard: View {
                 memberCount: 12,
                 distanceMeters: 800
             ),
-            userRole: nil
+            userRole: .organiser
         )
     }
     .padding(Spacing.lg)

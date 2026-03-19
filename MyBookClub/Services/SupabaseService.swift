@@ -265,6 +265,74 @@ final class SupabaseService {
             .eq("id", value: clubId.uuidString)
             .execute()
     }
+    
+    // MARK: - Club Update (organiser only)
+  
+     func updateClub(
+         clubId: UUID,
+         name: String,
+         description: String?,
+         genreTags: [String],
+         lat: Double,
+         lng: Double,
+         cityLabel: String,
+         isPublic: Bool,
+         memberCap: Int,
+         coverImageURL: String?,
+         recurringDay: String?,
+         recurringTime: String?
+     ) async throws -> Club {
+         // Round to 2dp for GDPR (~1km precision)
+         let roundedLat = (lat * 100).rounded() / 100
+         let roundedLng = (lng * 100).rounded() / 100
+         let locationWKT = "SRID=4326;POINT(\(roundedLng) \(roundedLat))"
+  
+         struct ClubUpdate: Encodable {
+             let name: String
+             let description: String?
+             let genre_tags: [String]
+             let location: String
+             let city_label: String
+             let is_public: Bool
+             let member_cap: Int
+             let cover_image_url: String?
+             let recurring_day: String?
+             let recurring_time: String?
+         }
+  
+         let update = ClubUpdate(
+             name: name,
+             description: description,
+             genre_tags: genreTags,
+             location: locationWKT,
+             city_label: cityLabel,
+             is_public: isPublic,
+             member_cap: memberCap,
+             cover_image_url: coverImageURL,
+             recurring_day: recurringDay,
+             recurring_time: recurringTime
+         )
+  
+         return try await client
+             .from("clubs")
+             .update(update)
+             .eq("id", value: clubId.uuidString)
+             .select("*, books(*)")
+             .single()
+             .execute()
+             .value
+     }
+  
+     // MARK: - Club Delete (organiser only)
+  
+     func deleteClub(clubId: UUID) async throws {
+         try await client
+             .from("clubs")
+             .delete()
+             .eq("id", value: clubId.uuidString)
+             .execute()
+     }
+  
 
     // MARK: - Meetings
 
