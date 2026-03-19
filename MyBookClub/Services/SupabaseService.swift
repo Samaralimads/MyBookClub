@@ -105,12 +105,28 @@ final class SupabaseService {
 
     func fetchMyClubs() async throws -> [Club] {
         guard let uid = currentUserID else { return [] }
-        return try await client
+        
+        // 1. Fetch the clubs this user belongs to
+        var clubs: [Club] = try await client
             .from("clubs")
             .select("*, books(*), club_members!inner(user_id)")
             .eq("club_members.user_id", value: uid.uuidString)
             .execute()
             .value
+
+        // 2. For each club, fetch the active member count
+        for i in clubs.indices {
+            let count: Int = try await client
+                .from("club_members")
+                .select("*", count: .exact)
+                .eq("club_id", value: clubs[i].id.uuidString)
+                .eq("status", value: "active")
+                .execute()
+                .count ?? 0
+            clubs[i].memberCount = count
+        }
+
+        return clubs
     }
 
     // MARK: - Club Membership

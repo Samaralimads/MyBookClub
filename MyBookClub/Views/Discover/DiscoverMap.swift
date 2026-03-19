@@ -65,7 +65,7 @@ struct MapClubBottomCard: View {
     let userRole: MemberRole?
 
     var body: some View {
-        DiscoverClubCard(club: club, userRole: userRole)
+        ClubCard(club: club, userRole: userRole)
             .overlay(alignment: .bottomTrailing) {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))

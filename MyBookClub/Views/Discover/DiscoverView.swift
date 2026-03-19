@@ -70,7 +70,7 @@ struct DiscoverView: View {
                 LazyVStack(spacing: Spacing.md) {
                     ForEach(vm.clubs) { club in
                         NavigationLink(value: club) {
-                            DiscoverClubCard(club: club, userRole: vm.role(for: club))
+                            ClubCard(club: club, userRole: vm.role(for: club))
                         }
                         .buttonStyle(.plain)
                     }

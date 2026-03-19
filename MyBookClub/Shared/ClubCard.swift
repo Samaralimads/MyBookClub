@@ -1,5 +1,5 @@
 //
-//  DiscoverClubCard.swift
+//  ClubCard.swift
 //  MyBookClub
 //
 //  Created by Samara Lima da Silva on 11/03/2026.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct DiscoverClubCard: View {
+struct ClubCard: View {
     let club: Club
     var userRole: MemberRole? = nil
 
@@ -102,7 +102,7 @@ struct DiscoverClubCard: View {
 
 #Preview {
     LazyVStack(spacing: Spacing.md) {
-        DiscoverClubCard(
+        ClubCard(
             club: Club(
                 id: UUID(),
                 name: "The Page Turners",

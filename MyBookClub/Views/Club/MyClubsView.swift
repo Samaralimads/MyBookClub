@@ -83,7 +83,7 @@ struct MyClubsView: View {
                     ? .organiser
                     : .member
                     NavigationLink(value: club) {
-                        DiscoverClubCard(club: club, userRole: role)
+                        ClubCard(club: club, userRole: role)
                     }
                     .buttonStyle(.plain)
                 }
