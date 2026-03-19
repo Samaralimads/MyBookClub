@@ -77,8 +77,8 @@ final class SupabaseService {
         query: String?
     ) async throws -> [Club] {
         var params: [String: AnyJSON] = [
-            "lat": .double(lat),
-            "lng": .double(lng),
+            "p_lat": .double(lat),
+            "p_lng": .double(lng),
             "radius_m": .double(radiusM),
         ]
         if !genres.isEmpty {

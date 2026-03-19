@@ -133,17 +133,59 @@ struct ClubDetailView: View {
 
     @ViewBuilder
     private var joinButton: some View {
-        if vm.membershipStatus == .pending {
-            Text("Request Pending")
-                .font(.appBody.weight(.semibold))
+        if vm.isOrganiser {
+            // Organiser sees nothing
+            EmptyView()
+        } else if vm.membershipStatus == .pending {
+            // Pending request — greyed out, not tappable
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "clock")
+                    .font(.system(size: 15))
+                Text("Request Pending")
+                    .font(.appBody.weight(.semibold))
+            }
+            .foregroundStyle(.inkSecondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.md + 2)
+            .background(Color.border.opacity(0.4))
+            .clipShape(RoundedRectangle(cornerRadius: 50))
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.md)
+        } else if vm.isMember {
+            // Already a member — joined button with dropdown
+            Menu {
+                Button(role: .none) {
+                    // TODO: notification preferences in a future part
+                } label: {
+                    Label("Manage Notifications", systemImage: "bell")
+                }
+
+                Divider()
+
+                Button(role: .destructive) {
+                    Task { await vm.leaveClub(clubId: club.id) }
+                } label: {
+                    Label("Leave Club", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .bold))
+                    Text("Joined")
+                        .font(.appBody.weight(.semibold))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                }
                 .foregroundStyle(.inkSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Spacing.md + 2)
-                .background(Color.purpleTint)
+                .background(Color.border.opacity(0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 50))
-                .padding(.horizontal, Spacing.lg)
-                .padding(.bottom, Spacing.md)
-        } else if !vm.isMember {
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.md)
+        } else {
+            // Not a member yet — primary join button
             Button {
                 Task { await vm.joinClub(clubId: club.id, isPublic: club.isPublic) }
             } label: {
@@ -163,7 +205,6 @@ struct ClubDetailView: View {
             .disabled(vm.isJoining)
         }
     }
-
     // MARK: - Tab Bar
 
     private var tabBar: some View {
