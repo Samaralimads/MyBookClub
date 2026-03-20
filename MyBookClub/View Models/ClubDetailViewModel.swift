@@ -26,6 +26,16 @@ final class ClubDetailViewModel {
     
     // MARK: - Load
     
+    private(set) var members: [AppUser] = []
+
+    func loadMembers(clubId: UUID) async {
+        do {
+            members = try await SupabaseService.shared.fetchClubMembers(clubId: clubId)
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+    
     func loadMembership(clubId: UUID) async {
         do {
             membershipStatus = try await SupabaseService.shared.membershipStatus(clubId: clubId)

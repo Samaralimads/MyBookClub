@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct DiscoverView: View {
-    @State private var vm         = DiscoverViewModel()
+    @State private var vm = DiscoverViewModel()
     @State private var showCreate = false
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -22,12 +22,12 @@ struct DiscoverView: View {
                     .padding(.top, Spacing.md)
                     .padding(.bottom, Spacing.sm)
                     .background(Color.background)
-
+                
                 DiscoverToolbar(vm: vm)
-
+                
                 Divider()
                     .background(Color.border)
-
+                
                 Group {
                     if vm.showMap {
                         DiscoverMap(clubs: vm.clubs, userRole: vm.role(for:))
@@ -54,9 +54,9 @@ struct DiscoverView: View {
             }
         }
     }
-
+    
     // MARK: - List
-
+    
     @ViewBuilder
     private var discoverList: some View {
         if vm.isLoading {

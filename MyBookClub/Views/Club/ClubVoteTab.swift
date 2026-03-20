@@ -26,6 +26,7 @@ struct ClubVoteTab: View {
             }
         }
         .padding(.bottom, Spacing.xxl)
+        
     }
 
     private var membersOnlyBanner: some View {

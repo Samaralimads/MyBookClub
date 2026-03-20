@@ -94,15 +94,26 @@ final class SupabaseService {
     }
 
     func fetchClub(id: UUID) async throws -> Club {
-        try await client
+        var club: Club = try await client
             .from("clubs")
             .select("*, books(*)")
             .eq("id", value: id.uuidString)
             .single()
             .execute()
             .value
-    }
 
+        let count: Int = try await client
+            .from("club_members")
+            .select("*", count: .exact)
+            .eq("club_id", value: id.uuidString)
+            .eq("status", value: "active")
+            .execute()
+            .count ?? 0
+
+        club.memberCount = count
+        return club
+    }
+    
     func fetchMyClubs() async throws -> [Club] {
         guard let uid = currentUserID else { return [] }
         
@@ -130,6 +141,20 @@ final class SupabaseService {
     }
 
     // MARK: - Club Membership
+    
+    func fetchClubMembers(clubId: UUID) async throws -> [AppUser] {
+        struct MemberRow: Decodable {
+            let users: AppUser
+        }
+        let rows: [MemberRow] = try await client
+            .from("club_members")
+            .select("users(*)")
+            .eq("club_id", value: clubId.uuidString)
+            .eq("status", value: "active")
+            .execute()
+            .value
+        return rows.map(\.users)
+    }
 
     func membershipStatus(clubId: UUID) async throws -> MemberStatus? {
         guard let uid = currentUserID else { return nil }

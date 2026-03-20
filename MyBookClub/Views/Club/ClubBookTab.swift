@@ -103,6 +103,7 @@ struct ClubBookTab: View {
             }
         }
     }
+    
 
     // MARK: - Chapters Checklist
 

@@ -125,7 +125,6 @@ struct MeetingBannerView: View {
     private func addToCalendar() async {
         let store = EKEventStore()
 
-        // Request access (iOS 17+ API; falls back gracefully on older OS)
         let granted: Bool
         do {
             granted = try await store.requestWriteOnlyAccessToEvents()

@@ -76,6 +76,11 @@ struct ClubHistoryTab: View {
         .padding(Spacing.md)
         .background(Color.cardBackground)
         .clipShape(.rect(cornerRadius: CornerRadius.card))
+        .overlay {
+            RoundedRectangle(cornerRadius: CornerRadius.card)
+                .stroke(Color.border, lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
     }
 
     // MARK: - Empty state
@@ -97,3 +102,4 @@ struct ClubHistoryTab: View {
         .padding(.vertical, Spacing.xxl)
     }
 }
+
