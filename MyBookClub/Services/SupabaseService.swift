@@ -636,6 +636,65 @@ final class SupabaseService {
             .eq("id", value: clubId.uuidString)
             .execute()
     }
+    
+    // Vote Suggestions
+
+    func fetchSuggestions(sessionId: UUID) async throws -> [BookSuggestion] {
+        guard let uid = currentUserID else { return [] }
+
+        struct SuggestionRow: Decodable {
+            let id: UUID
+            let books: Book
+            let voteCount: Int
+            let hasVoted: Bool
+
+            enum CodingKeys: String, CodingKey {
+                case id
+                case books
+                case voteCount = "vote_count"
+                case hasVoted  = "has_voted"
+            }
+        }
+
+        // Fetch suggestions with vote counts
+        let rows: [SuggestionRow] = try await client
+            .rpc("get_vote_suggestions", params: [
+                "p_session_id": AnyJSON.string(sessionId.uuidString),
+                "p_user_id":    AnyJSON.string(uid.uuidString)
+            ])
+            .execute()
+            .value
+
+        return rows.map {
+            BookSuggestion(
+                id: $0.id,
+                book: $0.books,
+                voteCount: $0.voteCount,
+                hasVoted: $0.hasVoted
+            )
+        }
+    }
+
+    func suggestBook(voteSessionId: UUID, bookId: UUID, clubId: UUID) async throws {
+        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        try await client.from("vote_suggestions").insert([
+            "vote_session_id": voteSessionId.uuidString,
+            "book_id":         bookId.uuidString,
+            "club_id":         clubId.uuidString,
+            "suggested_by":    uid.uuidString,
+        ]).execute()
+    }
+
+    func removeVote(voteSessionId: UUID, bookId: UUID) async throws {
+        guard let uid = currentUserID else { return }
+        try await client
+            .from("votes")
+            .delete()
+            .eq("vote_session_id", value: voteSessionId.uuidString)
+            .eq("book_id",         value: bookId.uuidString)
+            .eq("user_id",         value: uid.uuidString)
+            .execute()
+    }
 
     // MARK: - Books
 

@@ -297,11 +297,20 @@ struct ClubDetailView: View {
                 }
             )
         case .board:
-            ClubBoardTab(club: currentClub, isOrganiser: vm.isOrganiser)
+            ClubBoardTab(
+                club: currentClub,
+                isOrganiser: vm.isOrganiser
+            )
         case .vote:
-            ClubVoteTab(club: currentClub, isMember: vm.isMember)
+            ClubVoteTab(
+                club: currentClub,
+                isMember: vm.isMember,
+                isOrganiser: vm.isOrganiser
+            )
         case .history:
-            ClubHistoryTab(club: currentClub)
+            ClubHistoryTab(
+                club: currentClub
+            )
         }
     }
 }
