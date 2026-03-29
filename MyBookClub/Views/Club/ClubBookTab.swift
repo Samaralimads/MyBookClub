@@ -13,7 +13,6 @@ struct ClubBookTab: View {
     let isOrganiser: Bool
     let nextMeeting: Meeting?
     let onBookChanged: ((Book) -> Void)?
-    let onArchived: (() -> Void)?
 
     @State private var vm = ClubBookViewModel()
     @State private var showBookSearch = false
@@ -37,10 +36,7 @@ struct ClubBookTab: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
         .task {
-            let archived = await vm.load(club: club, isMember: isMember)
-            if archived {
-                onArchived?()
-            }
+            await vm.load(club: club, isMember: isMember)
         }
         .sheet(isPresented: $showBookSearch) {
             BookSearchSheet { selectedBook in
@@ -103,7 +99,6 @@ struct ClubBookTab: View {
             }
         }
     }
-    
 
     // MARK: - Chapters Checklist
 

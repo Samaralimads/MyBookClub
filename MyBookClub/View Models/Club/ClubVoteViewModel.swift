@@ -15,6 +15,9 @@ final class ClubVoteViewModel {
     var isVoting = false
     var error: AppError?
 
+    // Confirmation dialog state
+    var pendingWinnerSuggestion: BookSuggestion?
+
     // MARK: - Load
 
     func load(clubId: UUID, hasCurrentBook: Bool) async {
@@ -64,7 +67,6 @@ final class ClubVoteViewModel {
                 bookId: saved.id,
                 clubId: clubId
             )
-            // Reload suggestions
             var updated = session
             updated.suggestions = try await SupabaseService.shared.fetchSuggestions(sessionId: session.id)
             activeSession = updated
@@ -91,7 +93,6 @@ final class ClubVoteViewModel {
                     clubId: clubId
                 )
             }
-            // Reload suggestions to get updated counts
             if var session = activeSession {
                 session.suggestions = try await SupabaseService.shared.fetchSuggestions(sessionId: sessionId)
                 activeSession = session
@@ -103,7 +104,7 @@ final class ClubVoteViewModel {
 
     // MARK: - Close session (organiser)
 
-    func closeSession(session: VoteSession, winnerBookId: UUID, clubId: UUID) async {
+    func closeSession(session: VoteSession, winnerBookId: UUID, clubId: UUID) async -> Book? {
         isVoting = true
         defer { isVoting = false }
         do {
@@ -112,9 +113,13 @@ final class ClubVoteViewModel {
                 winnerBookId: winnerBookId,
                 clubId: clubId
             )
+            let winningBook = session.suggestions?.first { $0.book.id == winnerBookId }?.book
             activeSession = nil
+            pendingWinnerSuggestion = nil
+            return winningBook
         } catch {
             self.error = AppError(underlying: error)
+            return nil
         }
     }
 }

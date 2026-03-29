@@ -12,71 +12,71 @@ import MapKit
 
 @Observable
 final class CreateClubViewModel {
-
+    
     // MARK: - Mode
-
+    
     enum Mode {
         case create
         case edit(Club)
-
+        
         var isEditing: Bool {
             if case .edit = self { return true }
             return false
         }
-
+        
         var existingClub: Club? {
             if case .edit(let club) = self { return club }
             return nil
         }
     }
-
+    
     let mode: Mode
-
+    
     // MARK: - Form Fields
-
-    var name              = ""
-    var description       = ""
-    var selectedGenre: Genre?        = nil
-    var isPublic                     = true
-    var memberCapText                = ""
-    var cityLabel                    = ""
-
+    
+    var name = ""
+    var description = ""
+    var selectedGenre: Genre? = nil
+    var isPublic = true
+    var memberCapText = ""
+    var cityLabel = ""
+    
     // Coordinates resolved from the city autocomplete selection
     var resolvedLat: Double? = nil
     var resolvedLng: Double? = nil
-
+    
     // Meeting Schedule
     var frequency: MeetingFrequency? = nil
     var recurringDay: String?        = nil
     var recurringTime: Date          = Calendar.current.date(
-                                         bySettingHour: 19, minute: 0, second: 0,
-                                         of: .now
-                                       ) ?? .now
-
+        bySettingHour: 19, minute: 0, second: 0,
+        of: .now
+    ) ?? .now
+    
     // Cover image
     var selectedPhotoItem: PhotosPickerItem? = nil {
         didSet { Task { await loadSelectedImage() } }
     }
     var coverImage: UIImage? = nil
     var existingCoverURL: String? = nil
-
+    
     // MARK: - State
-
+    
     var isLoading        = false
     var error: AppError?
     var createdClub: Club?
     var showDeleteConfirm = false
     var isDeleting        = false
-
+    
     // MARK: - Init
-
+    
     init(mode: Mode = .create) {
         self.mode = mode
         if let club = mode.existingClub {
             prefill(from: club)
         }
     }
-
+    
     private func prefill(from club: Club) {
         name             = club.name
         description      = club.description ?? ""
@@ -86,7 +86,7 @@ final class CreateClubViewModel {
         existingCoverURL = club.coverImageURL
         resolvedLat      = club.lat
         resolvedLng      = club.lng
-
+        
         if let tag = club.genreTags.first {
             selectedGenre = Genre(rawValue: tag)
         }
@@ -106,22 +106,22 @@ final class CreateClubViewModel {
             _ = freq
         }
     }
-
+    
     // MARK: - Derived
-
+    
     var memberCap: Int {
         Int(memberCapText.trimmingCharacters(in: .whitespaces)) ?? 12
     }
-
+    
     var canCreate: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
         selectedGenre != nil &&
         !description.trimmingCharacters(in: .whitespaces).isEmpty &&
         !cityLabel.trimmingCharacters(in: .whitespaces).isEmpty
     }
-
+    
     // MARK: - Image Loading
-
+    
     @MainActor
     private func loadSelectedImage() async {
         guard let item = selectedPhotoItem else { return }
@@ -130,9 +130,9 @@ final class CreateClubViewModel {
             coverImage = image
         }
     }
-
+    
     // MARK: - City Selection
-
+    
     func selectSuggestion(_ completion: MKLocalSearchCompletion, citySearch: CitySearchService) {
         Task {
             if let coord = await citySearch.geocode(completion) {
@@ -141,25 +141,25 @@ final class CreateClubViewModel {
             }
         }
     }
-
+    
     // MARK: - Create
-
+    
     func createClub(locationService: LocationService) async {
         guard canCreate, let genre = selectedGenre else { return }
         isLoading = true
         defer { isLoading = false }
         error = nil
-
+        
         let lat = resolvedLat ?? locationService.roundedLatitude
         let lng = resolvedLng ?? locationService.roundedLongitude
-
+        
         let timeString: String? = {
             guard recurringDay != nil else { return nil }
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss"
             return formatter.string(from: recurringTime)
         }()
-
+        
         do {
             var club = try await SupabaseService.shared.createClub(
                 name:          name.trimmingCharacters(in: .whitespaces),
@@ -174,46 +174,46 @@ final class CreateClubViewModel {
                 recurringDay:  recurringDay,
                 recurringTime: timeString
             )
-
+            
             if let image = coverImage {
                 let url = try await ImageUploadService.shared.uploadClubCover(image, clubId: club.id)
                 try await SupabaseService.shared.updateClubCover(clubId: club.id, coverImageURL: url)
                 club.coverImageURL = url
             }
-
+            
             createdClub = club
-
+            
         } catch {
             self.error = AppError(underlying: error)
         }
     }
-
+    
     // MARK: - Update (edit mode)
-
+    
     func updateClub(locationService: LocationService) async {
         guard canCreate, let genre = selectedGenre,
               let existing = mode.existingClub else { return }
         isLoading = true
         defer { isLoading = false }
         error = nil
-
+        
         let lat = resolvedLat ?? locationService.roundedLatitude
         let lng = resolvedLng ?? locationService.roundedLongitude
-
+        
         let timeString: String? = {
             guard recurringDay != nil else { return nil }
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss"
             return formatter.string(from: recurringTime)
         }()
-
+        
         do {
             // Upload new cover if the user picked one
             var newCoverURL = existingCoverURL
             if let image = coverImage {
                 newCoverURL = try await ImageUploadService.shared.uploadClubCover(image, clubId: existing.id)
             }
-
+            
             let updated = try await SupabaseService.shared.updateClub(
                 clubId:        existing.id,
                 name:          name.trimmingCharacters(in: .whitespaces),
@@ -228,16 +228,16 @@ final class CreateClubViewModel {
                 recurringDay:  recurringDay,
                 recurringTime: timeString
             )
-
+            
             createdClub = updated
-
+            
         } catch {
             self.error = AppError(underlying: error)
         }
     }
-
+    
     // MARK: - Delete (edit mode only)
-
+    
     func deleteClub() async {
         guard let existing = mode.existingClub else { return }
         isDeleting = true

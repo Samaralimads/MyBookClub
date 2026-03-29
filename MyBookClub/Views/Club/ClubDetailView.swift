@@ -287,13 +287,6 @@ struct ClubDetailView: View {
                 onBookChanged: { book in
                     currentClub.currentBook = book
                     currentClub.currentBookId = book.id
-                },
-                onArchived: {
-                    Task { @MainActor in
-                        if let fresh = await vm.reloadClub(clubId: club.id) {
-                            currentClub = fresh
-                        }
-                    }
                 }
             )
         case .board:
@@ -305,7 +298,12 @@ struct ClubDetailView: View {
             ClubVoteTab(
                 club: currentClub,
                 isMember: vm.isMember,
-                isOrganiser: vm.isOrganiser
+                isOrganiser: vm.isOrganiser,
+                onWinnerPicked: { book in
+                    // Update in-memory club so the Book tab reflects the winner immediately
+                    currentClub.currentBook = book
+                    currentClub.currentBookId = book.id
+                }
             )
         case .history:
             ClubHistoryTab(

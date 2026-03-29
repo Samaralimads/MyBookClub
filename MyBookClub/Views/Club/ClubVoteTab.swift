@@ -12,6 +12,9 @@ struct ClubVoteTab: View {
     let isMember: Bool
     let isOrganiser: Bool
 
+    /// Called with the winning Book after the organiser confirms and the session closes.
+    var onWinnerPicked: ((Book) -> Void)?
+
     @State private var vm = ClubVoteViewModel()
     @State private var showBookSearch = false
 
@@ -39,6 +42,31 @@ struct ClubVoteTab: View {
                 Task { await vm.suggestBook(book, clubId: club.id) }
             }
         }
+        // Confirmation before picking a winner
+        .alert(
+            "Set \"\(vm.pendingWinnerSuggestion?.book.title ?? "this book")\" as your next read?",
+            isPresented: Binding(
+                get: { vm.pendingWinnerSuggestion != nil },
+                set: { if !$0 { vm.pendingWinnerSuggestion = nil } }
+            )
+        ) {
+            Button("Yes") {
+                guard let pending = vm.pendingWinnerSuggestion,
+                      let session = vm.activeSession else { return }
+                Task {
+                    if let book = await vm.closeSession(
+                        session: session,
+                        winnerBookId: pending.book.id,
+                        clubId: club.id
+                    ) {
+                        onWinnerPicked?(book)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will close voting and set the winning book as your club's current read. This cannot be undone.")
+        }
     }
 
     // MARK: - Currently reading banner
@@ -59,7 +87,7 @@ struct ClubVoteTab: View {
         .frame(maxWidth: .infinity)
         .padding(Spacing.xl)
         .background(Color.accentSubtle)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+        .clipShape(.rect(cornerRadius: CornerRadius.card))
     }
 
     // MARK: - Active session
@@ -67,7 +95,6 @@ struct ClubVoteTab: View {
     private func activeVoteSection(session: VoteSession) -> some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
 
-            // Header banner
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text("Next Book Voting")
                     .font(.appBody.weight(.semibold))
@@ -81,7 +108,6 @@ struct ClubVoteTab: View {
             .background(Color.accentSubtle)
             .clipShape(.rect(cornerRadius: CornerRadius.card))
 
-            // Suggestions
             if let suggestions = session.suggestions, !suggestions.isEmpty {
                 VStack(spacing: Spacing.md) {
                     ForEach(suggestions) { suggestion in
@@ -104,7 +130,6 @@ struct ClubVoteTab: View {
                     .padding(.vertical, Spacing.xl)
             }
 
-            // Suggest a Book dashed button
             Button { showBookSearch = true } label: {
                 Label("Suggest a Book", systemImage: "plus")
                     .font(.appBody.weight(.medium))
@@ -122,25 +147,19 @@ struct ClubVoteTab: View {
                     .foregroundStyle(Color.inkSecondary.opacity(0.4))
             }
 
-            // Organiser: pick winner manually
+            // Organiser: pick winner — sets pendingWinnerSuggestion to trigger confirmation
             if isOrganiser, let suggestions = session.suggestions, !suggestions.isEmpty {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Pick the winner")
                         .font(.appBody.weight(.semibold))
                         .foregroundStyle(.inkPrimary)
-                    Text("This will set the selected book as your club's current read.")
+                    Text("Tap a book to confirm it as your club's next read.")
                         .font(.appCaption)
                         .foregroundStyle(.inkSecondary)
 
                     ForEach(suggestions) { suggestion in
                         Button {
-                            Task {
-                                await vm.closeSession(
-                                    session: session,
-                                    winnerBookId: suggestion.book.id,
-                                    clubId: club.id
-                                )
-                            }
+                            vm.pendingWinnerSuggestion = suggestion
                         } label: {
                             HStack(spacing: Spacing.sm) {
                                 AsyncImage(url: suggestion.book.displayCoverURL) { image in
@@ -217,7 +236,6 @@ struct BookSuggestionRow: View {
     var body: some View {
         HStack(spacing: Spacing.lg) {
 
-            // Cover
             AsyncImage(url: suggestion.book.displayCoverURL) { image in
                 image.resizable().scaledToFill()
             } placeholder: {
@@ -231,7 +249,6 @@ struct BookSuggestionRow: View {
             .clipShape(.rect(cornerRadius: CornerRadius.badge))
             .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
 
-            // Info + vote
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(suggestion.book.title)
                     .font(.appBody.weight(.semibold))
