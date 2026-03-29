@@ -10,23 +10,35 @@ import SwiftUI
 struct ClubAboutTab: View {
     let club: Club
     let isOrganiser: Bool
+    let isMember: Bool
     let nextMeeting: Meeting?
     let isScheduling: Bool
     let members: [AppUser]
     let onSchedule: (String, Date, Int?, Int?, [String]?, String?, Bool) -> Void
-
+    
     @State private var showPlanMeeting = false
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
-
-            // Meeting banner — always visible if a meeting exists
-            if let meeting = nextMeeting {
-                MeetingBannerView(
-                    meeting: meeting,
-                )
+            
+            //banner OR button
+            Group {
+                if let meeting = nextMeeting, (isMember || isOrganiser) {
+                    MeetingBannerView(meeting: meeting)
+                } else if isOrganiser {
+                    Button {
+                        showPlanMeeting = true
+                    } label: {
+                        Label(
+                            "Plan Next Meeting",
+                            systemImage: "calendar.badge.plus"
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
             }
-
+            
             if let description = club.description {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Description")
@@ -38,14 +50,14 @@ struct ClubAboutTab: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-
+            
             VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Members")
                     .font(.appHeadline)
                     .foregroundStyle(.inkPrimary)
                 MemberAvatarStack(count: club.memberCount ?? 0, members: members)
             }
-
+            
             if let day = club.recurringDay {
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Meeting Schedule")
@@ -64,19 +76,6 @@ struct ClubAboutTab: View {
                         }
                     }
                 }
-            }
-
-            if isOrganiser {
-                Button {
-                    showPlanMeeting = true
-                } label: {
-                    Label(
-                        nextMeeting == nil ? "Plan Next Meeting" : "Edit Meeting",
-                        systemImage: "calendar.badge.plus"
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(SecondaryButtonStyle())
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,15 +99,15 @@ struct ClubAboutTab: View {
 struct MemberAvatarStack: View {
     let count: Int
     var members: [AppUser] = []
-
+    
     private let visibleCount = 5
     private let size: CGFloat = 40
     private let overlap: CGFloat = 12
-
+    
     var body: some View {
         let shown = min(visibleCount, count)
         let hasExtra = count > visibleCount
-
+        
         HStack(spacing: -(overlap)) {
             ForEach(0..<shown, id: \.self) { i in
                 avatarView(for: i)
@@ -126,7 +125,7 @@ struct MemberAvatarStack: View {
             }
         }
     }
-
+    
     @ViewBuilder
     private func avatarView(for index: Int) -> some View {
         Group {
@@ -145,7 +144,7 @@ struct MemberAvatarStack: View {
         .clipShape(Circle())
         .overlay(Circle().stroke(Color.background, lineWidth: 2))
     }
-
+    
     private var placeholder: some View {
         Circle()
             .fill(Color.purpleTint)

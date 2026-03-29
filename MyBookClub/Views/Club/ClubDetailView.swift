@@ -54,10 +54,11 @@ struct ClubDetailView: View {
         .toolbar {
             if vm.isOrganiser {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("", systemImage: "gearshape") {
+                    Button {
                         showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
                     }
-                    .tint(.black)
                 }
             }
 
@@ -68,10 +69,10 @@ struct ClubDetailView: View {
                     message: Text("Join me at \(currentClub.name) on MyBookClub!")
                 ) {
                     Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(.black)
                 }
             }
         }
+        .tint(.primary)
         .toolbarBackground(.hidden, for: .navigationBar)
         .sheet(isPresented: $showSettings) {
             NavigationStack {
@@ -260,6 +261,7 @@ struct ClubDetailView: View {
             ClubAboutTab(
                 club: currentClub,
                 isOrganiser: vm.isOrganiser,
+                isMember: vm.isMember,
                 nextMeeting: vm.nextMeeting,
                 isScheduling: vm.isScheduling,
                 members: vm.members,
@@ -282,12 +284,7 @@ struct ClubDetailView: View {
             ClubBookTab(
                 club: currentClub,
                 isMember: vm.isMember,
-                isOrganiser: vm.isOrganiser,
-                nextMeeting: vm.nextMeeting,
-                onBookChanged: { book in
-                    currentClub.currentBook = book
-                    currentClub.currentBookId = book.id
-                }
+                nextMeeting: vm.nextMeeting
             )
         case .board:
             ClubBoardTab(

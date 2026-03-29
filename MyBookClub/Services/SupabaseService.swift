@@ -708,15 +708,6 @@ final class SupabaseService {
             .value
     }
 
-    func setCurrentBook(clubId: UUID, book: Book) async throws {
-        let saved = try await cacheBook(book)
-        try await client
-            .from("clubs")
-            .update(["current_book_id": saved.id.uuidString])
-            .eq("id", value: clubId.uuidString)
-            .execute()
-    }
-
     // MARK: - Book History
  
     func fetchBookHistory(clubId: UUID) async throws -> [ClubBookHistory] {

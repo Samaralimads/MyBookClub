@@ -10,12 +10,9 @@ import SwiftUI
 struct ClubBookTab: View {
     let club: Club
     let isMember: Bool
-    let isOrganiser: Bool
     let nextMeeting: Meeting?
-    let onBookChanged: ((Book) -> Void)?
 
     @State private var vm = ClubBookViewModel()
-    @State private var showBookSearch = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
@@ -28,23 +25,11 @@ struct ClubBookTab: View {
             } else {
                 emptyState
             }
-
-            if isOrganiser {
-                setBookButton
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
         .task {
             await vm.load(club: club, isMember: isMember)
-        }
-        .sheet(isPresented: $showBookSearch) {
-            BookSearchSheet { selectedBook in
-                Task {
-                    await vm.setCurrentBook(club: club, book: selectedBook)
-                    onBookChanged?(selectedBook)
-                }
-            }
         }
     }
 
@@ -138,31 +123,13 @@ struct ClubBookTab: View {
             Text("No book selected yet")
                 .font(.appBody)
                 .foregroundStyle(.inkSecondary)
-            if isOrganiser {
-                Text("Use the button below to set your club's first read.")
-                    .font(.appCaption)
-                    .foregroundStyle(.inkTertiary)
-                    .multilineTextAlignment(.center)
-            }
+            Text("Head to the Vote tab to suggest and vote for your club's next read.")
+                .font(.appCaption)
+                .foregroundStyle(.inkTertiary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Spacing.xxl)
-    }
-
-    // MARK: - Set Book (organiser only)
-
-    private var setBookButton: some View {
-        Button {
-            showBookSearch = true
-        } label: {
-            Label(
-                club.currentBook == nil ? "Set Current Book" : "Change Book",
-                systemImage: "magnifyingglass"
-            )
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(SecondaryButtonStyle())
-        .disabled(vm.isSettingBook)
     }
 }
 

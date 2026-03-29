@@ -13,7 +13,6 @@ final class ClubBookViewModel {
     // MARK: - State
 
     private(set) var readingProgress: ReadingProgress?
-    var isSettingBook = false
     var error: AppError?
 
     // MARK: - Load
@@ -62,21 +61,7 @@ final class ClubBookViewModel {
         }
     }
 
-    // MARK: - Set current book (organiser only)
-
-    func setCurrentBook(club: Club, book: Book) async {
-        isSettingBook = true
-        defer { isSettingBook = false }
-        do {
-            try await SupabaseService.shared.setCurrentBook(clubId: club.id, book: book)
-        } catch {
-            self.error = AppError(underlying: error)
-        }
-    }
-
     // MARK: - Archive (organiser only, explicit action)
-    // Called deliberately — e.g. after the final meeting is confirmed done.
-    // NOT called automatically on load.
 
     func archiveCurrentBook(club: Club) async -> Bool {
         guard let bookId = club.currentBookId else { return false }
