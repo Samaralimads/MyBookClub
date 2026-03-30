@@ -120,7 +120,6 @@ struct DiscoverFilterChips: View {
         HStack(spacing: Spacing.sm) {
             genreMenu
             distanceMenu
-            frequencyMenu
         }
         .padding(.horizontal, Spacing.lg)
     }
@@ -185,36 +184,6 @@ struct DiscoverFilterChips: View {
             .frame(maxWidth: .infinity)
         }
     }
-
-    // MARK: Frequency
-
-    private var frequencyMenu: some View {
-        Menu {
-            Button("Any Frequency") {
-                vm.selectedFrequency = nil
-                Task { await vm.loadClubs() }
-            }
-            Divider()
-            ForEach(MeetingFrequency.allCases, id: \.rawValue) { freq in
-                Button {
-                    vm.selectedFrequency = freq
-                    Task { await vm.loadClubs() }
-                } label: {
-                    if vm.selectedFrequency == freq {
-                        Label(freq.label, systemImage: "checkmark")
-                    } else {
-                        Text(freq.label)
-                    }
-                }
-            }
-        } label: {
-            FilterDropdownChip(
-                label: vm.selectedFrequency?.label ?? "Frequency",
-                isActive: vm.selectedFrequency != nil
-            )
-            .frame(maxWidth: .infinity)
-        }
-    }
 }
 
 // MARK: - Filter Dropdown Chip
@@ -248,24 +217,6 @@ struct FilterDropdownChip: View {
         .frame(maxWidth: .infinity)
         .background(isActive ? Color.accent : Color.accentSubtle)
         .clipShape(.rect(cornerRadius: CornerRadius.button))
-    }
-}
-
-// MARK: - Meeting Frequency
-
-enum MeetingFrequency: String, CaseIterable {
-    case weekly   = "weekly"
-    case biWeekly = "bi-weekly"
-    case monthly  = "monthly"
-    case flexible = "flexible"
-
-    var label: String {
-        switch self {
-        case .weekly:   "Weekly"
-        case .biWeekly: "Bi-weekly"
-        case .monthly:  "Monthly"
-        case .flexible: "Flexible"
-        }
     }
 }
 

@@ -49,19 +49,20 @@ struct ClubDetailView: View {
             await vm.loadMembers(clubId: club.id)
             if let fresh = await vm.reloadClub(clubId: club.id) {
                 currentClub = fresh
+                // Show alert if organiser opens a full club
+                if vm.isOrganiser && vm.isAtCapacity(club: fresh) {
+                    vm.showCapacityReachedAlert = true
+                }
             }
         }
         .toolbar {
             if vm.isOrganiser {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
+                    Button { showSettings = true } label: {
                         Image(systemName: "gearshape")
                     }
                 }
             }
-
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(
                     item: shareURL,
@@ -78,14 +79,18 @@ struct ClubDetailView: View {
             NavigationStack {
                 CreateClubView(
                     club: currentClub,
-                    onClubUpdated: { updated in
-                        currentClub = updated
-                    },
-                    onClubDeleted: {
-                        dismiss()
-                    }
+                    onClubUpdated: { updated in currentClub = updated },
+                    onClubDeleted: { dismiss() }
                 )
             }
+        }
+        // Organiser capacity alert
+        .alert("Your club is full 🎉", isPresented: $vm.showCapacityReachedAlert) {
+            Button("Raise Capacity") { showSettings = true }
+            Button("OK", role: .cancel) { }
+        } message: {
+            let cap = currentClub.memberCap
+            Text("You've reached your \(cap)-member limit. No new members can join until you raise the capacity in Club Settings.")
         }
     }
 
@@ -125,11 +130,17 @@ struct ClubDetailView: View {
                 .foregroundStyle(.inkPrimary)
 
             HStack(spacing: Spacing.xl) {
+                // Member count — shows x/cap if cap is set
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
                         .font(.system(size: 14))
-                    Text("^[\(currentClub.memberCount ?? 0) Member](inflect: true)")
-                        .font(.appBody)
+                    if currentClub.memberCap > 0 {
+                        Text("\(currentClub.memberCount ?? 0)/\(currentClub.memberCap)")
+                            .font(.appBody)
+                    } else {
+                        Text("^[\(currentClub.memberCount ?? 0) Member](inflect: true)")
+                            .font(.appBody)
+                    }
                 }
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.and.ellipse")
@@ -204,9 +215,24 @@ struct ClubDetailView: View {
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.bottom, Spacing.md)
+        } else if vm.isAtCapacity(club: currentClub) {
+            // Club is full — show disabled state with count
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "person.fill.xmark")
+                    .font(.system(size: 15))
+                Text("Club Full (\(currentClub.memberCount ?? 0)/\(currentClub.memberCap))")
+                    .font(.appBody.weight(.semibold))
+            }
+            .foregroundStyle(.inkTertiary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.md + 2)
+            .background(Color.border.opacity(0.3))
+            .clipShape(RoundedRectangle(cornerRadius: 50))
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.md)
         } else {
             Button {
-                Task { await vm.joinClub(clubId: club.id, isPublic: club.isPublic) }
+                Task { await vm.joinClub(club: currentClub) }
             } label: {
                 Group {
                     if vm.isJoining {
@@ -297,15 +323,12 @@ struct ClubDetailView: View {
                 isMember: vm.isMember,
                 isOrganiser: vm.isOrganiser,
                 onWinnerPicked: { book in
-                    // Update in-memory club so the Book tab reflects the winner immediately
                     currentClub.currentBook = book
                     currentClub.currentBookId = book.id
                 }
             )
         case .history:
-            ClubHistoryTab(
-                club: currentClub
-            )
+            ClubHistoryTab(club: currentClub)
         }
     }
 }
@@ -321,9 +344,6 @@ struct ClubDetailView: View {
         cityLabel: "Blue Bottle Coffee, Downtown",
         isPublic: true,
         memberCap: 20,
-        recurringDay: "Saturday",
-        recurringTime: "14:00",
-        currentBookId: nil,
         createdAt: .now,
         memberCount: 14
     ))

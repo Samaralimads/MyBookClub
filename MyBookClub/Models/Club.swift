@@ -19,14 +19,11 @@ struct Club: Codable, Identifiable, Hashable {
     var lng: Double?
     var isPublic: Bool
     var memberCap: Int
-    var recurringDay: String?
-    var recurringTime: String?
     var currentBookId: UUID?
     let createdAt: Date
 
     var currentBook: Book?
     var memberCount: Int?
-
     var distanceMeters: Double?
 
     enum CodingKeys: String, CodingKey {
@@ -41,8 +38,6 @@ struct Club: Codable, Identifiable, Hashable {
         case lng
         case isPublic       = "is_public"
         case memberCap      = "member_cap"
-        case recurringDay   = "recurring_day"
-        case recurringTime  = "recurring_time"
         case currentBookId  = "current_book_id"
         case createdAt      = "created_at"
         case currentBook    = "books"
@@ -50,4 +45,3 @@ struct Club: Codable, Identifiable, Hashable {
         case distanceMeters = "distance_meters"
     }
 }
-

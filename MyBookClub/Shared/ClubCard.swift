@@ -57,7 +57,7 @@ struct ClubCard: View {
                         .foregroundStyle(.accent)
                 }
 
-                // Row 3: Members + recurring day
+                // Row 3: Members + city
                 HStack(spacing: Spacing.lg) {
                     HStack(spacing: 4) {
                         Image(systemName: "person.2")
@@ -67,29 +67,15 @@ struct ClubCard: View {
                     }
                     .foregroundStyle(.inkSecondary)
 
-                    if let day = club.recurringDay {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 11))
-                            Text(day)
-                                .font(.appCaption)
-                        }
-                        .foregroundStyle(.inkSecondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 11))
+                        Text(club.cityLabel.split(separator: ",").first.map(String.init) ?? "")
+                            .font(.appCaption)
+                            .lineLimit(1)
                     }
+                    .foregroundStyle(.inkSecondary)
                 }
-
-                // Row 4: Currently reading
-//                if let book = club.currentBook {
-//                    HStack(spacing: 4) {
-//                        Text("Reading:")
-//                            .font(.appCaption.weight(.semibold))
-//                            .foregroundStyle(.inkPrimary)
-//                        Text(book.title)
-//                            .font(.appCaption)
-//                            .foregroundStyle(.inkSecondary)
-//                            .lineLimit(1)
-//                    }
-//                }
             }
             .padding(Spacing.md)
         }

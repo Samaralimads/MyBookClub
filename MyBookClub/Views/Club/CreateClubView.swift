@@ -22,13 +22,11 @@ struct CreateClubView: View {
 
     // MARK: - Init
 
-    // Create mode
     init(onClubCreated: ((Club) -> Void)? = nil) {
         _vm = State(initialValue: CreateClubViewModel(mode: .create))
         self.onClubCreated = onClubCreated
     }
 
-    // Edit mode
     init(
         club: Club,
         onClubUpdated: ((Club) -> Void)? = nil,
@@ -53,7 +51,6 @@ struct CreateClubView: View {
                     categorySection
                     descriptionSection
                     citySection
-                    meetingScheduleSection
                     maxMembersSection
                     visibilitySection
 
@@ -64,7 +61,6 @@ struct CreateClubView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    // Primary action button
                     Button {
                         Task { await handlePrimaryAction() }
                     } label: {
@@ -74,7 +70,6 @@ struct CreateClubView: View {
                     .disabled(!vm.canCreate || vm.isLoading)
                     .padding(.top, Spacing.sm)
 
-                    // Delete — edit mode only
                     if vm.mode.isEditing {
                         dangerZoneSection
                     }
@@ -96,7 +91,6 @@ struct CreateClubView: View {
                     .foregroundStyle(.accent)
             }
         }
-        // Success alert — create mode
         .alert("Club Created! 🎉", isPresented: $showSuccess) {
             Button("Let's go!") {
                 if let club = vm.createdClub { onClubCreated?(club) }
@@ -105,7 +99,6 @@ struct CreateClubView: View {
         } message: {
             Text("\"\(vm.createdClub?.name ?? "")\" is now live. Start inviting members and pick your first book.")
         }
-        // Delete confirmation
         .confirmationDialog(
             "Delete \"\(vm.mode.existingClub?.name ?? "this club")\"?",
             isPresented: $vm.showDeleteConfirm,
@@ -131,7 +124,6 @@ struct CreateClubView: View {
                 photoLibrary: .shared()
             ) {
                 ZStack {
-                    // Show newly picked image first, then fall back to existing remote URL
                     if let image = vm.coverImage {
                         Image(uiImage: image)
                             .resizable()
@@ -140,9 +132,7 @@ struct CreateClubView: View {
                             .frame(height: 140)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                            .overlay(alignment: .bottomTrailing) {
-                                changeBadge
-                            }
+                            .overlay(alignment: .bottomTrailing) { changeBadge }
                     } else if let urlString = vm.existingCoverURL,
                               let url = URL(string: urlString) {
                         AsyncImage(url: url) { image in
@@ -154,9 +144,7 @@ struct CreateClubView: View {
                         .frame(height: 140)
                         .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                        .overlay(alignment: .bottomTrailing) {
-                            changeBadge
-                        }
+                        .overlay(alignment: .bottomTrailing) { changeBadge }
                     } else {
                         uploadPlaceholder
                     }
@@ -365,128 +353,6 @@ struct CreateClubView: View {
         }
     }
 
-    // MARK: - Meeting Schedule
-
-    private var meetingScheduleSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            SectionLabel("Meeting Schedule")
-
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("How often?")
-                    .font(.appCaption)
-                    .foregroundStyle(.inkSecondary)
-                Menu {
-                    Button("Select frequency") { vm.frequency = nil }
-                    Divider()
-                    ForEach(MeetingFrequency.allCases, id: \.rawValue) { freq in
-                        Button {
-                            vm.frequency = freq
-                        } label: {
-                            if vm.frequency == freq {
-                                Label(freq.label, systemImage: "checkmark")
-                            } else {
-                                Text(freq.label)
-                            }
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text(vm.frequency?.label ?? "Select frequency")
-                            .font(.appBody)
-                            .foregroundStyle(vm.frequency == nil ? .inkTertiary : .inkPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.inkSecondary)
-                    }
-                    .padding(.horizontal, Spacing.md)
-                    .frame(height: 50)
-                    .background(Color.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: CornerRadius.card)
-                            .stroke(
-                                vm.frequency != nil ? Color.accentColor : Color.border,
-                                lineWidth: vm.frequency != nil ? 1.5 : 1
-                            )
-                    }
-                }
-            }
-
-            HStack(spacing: Spacing.md) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Day")
-                        .font(.appCaption)
-                        .foregroundStyle(.inkSecondary)
-                    Menu {
-                        Button("No specific day") { vm.recurringDay = nil }
-                        Divider()
-                        ForEach(
-                            ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-                            id: \.self
-                        ) { day in
-                            Button {
-                                vm.recurringDay = day
-                            } label: {
-                                if vm.recurringDay == day {
-                                    Label(day, systemImage: "checkmark")
-                                } else {
-                                    Text(day)
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 15))
-                                .foregroundStyle(.inkSecondary)
-                            Text(vm.recurringDay ?? "Saturday")
-                                .font(.appBody)
-                                .foregroundStyle(vm.recurringDay == nil ? .inkTertiary : .inkPrimary)
-                            Spacer()
-                        }
-                        .padding(.horizontal, Spacing.md)
-                        .frame(height: 50)
-                        .background(Color.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: CornerRadius.card)
-                                .stroke(Color.border, lineWidth: 1)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Time")
-                        .font(.appCaption)
-                        .foregroundStyle(.inkSecondary)
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.inkSecondary)
-                        DatePicker(
-                            "",
-                            selection: $vm.recurringTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                        .labelsHidden()
-                        .tint(.accent)
-                    }
-                    .padding(.horizontal, Spacing.md)
-                    .frame(height: 50)
-                    .background(Color.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: CornerRadius.card)
-                            .stroke(Color.border, lineWidth: 1)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
     // MARK: - Max Members
 
     private var maxMembersSection: some View {
@@ -497,6 +363,9 @@ struct CreateClubView: View {
                     .font(.appCaption)
                     .foregroundStyle(.inkTertiary)
             }
+            Text("Leave empty for no limit.")
+                .font(.appCaption)
+                .foregroundStyle(.inkTertiary)
             HStack(spacing: Spacing.md) {
                 Image(systemName: "person.2")
                     .font(.system(size: 16))
@@ -685,8 +554,6 @@ private struct VisibilityOption: View {
                 cityLabel: "Blue Bottle Coffee, Downtown",
                 isPublic: true,
                 memberCap: 20,
-                recurringDay: "Saturday",
-                recurringTime: "19:00:00",
                 createdAt: .now,
                 memberCount: 14
             )

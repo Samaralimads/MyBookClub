@@ -21,7 +21,6 @@ final class DiscoverViewModel {
     var searchText = ""
     var selectedGenres: Set<String> = []
     var radiusKm: Double? = nil
-    var selectedFrequency: MeetingFrequency?
 
     // View mode
     var showMap = false

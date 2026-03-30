@@ -113,11 +113,10 @@ final class SupabaseService {
         club.memberCount = count
         return club
     }
-    
+
     func fetchMyClubs() async throws -> [Club] {
         guard let uid = currentUserID else { return [] }
-        
-        // 1. Fetch the clubs this user belongs to
+
         var clubs: [Club] = try await client
             .from("clubs")
             .select("*, books(*), club_members!inner(user_id)")
@@ -125,7 +124,6 @@ final class SupabaseService {
             .execute()
             .value
 
-        // 2. For each club, fetch the active member count
         for i in clubs.indices {
             let count: Int = try await client
                 .from("club_members")
@@ -141,7 +139,7 @@ final class SupabaseService {
     }
 
     // MARK: - Club Membership
-    
+
     func fetchClubMembers(clubId: UUID) async throws -> [AppUser] {
         struct MemberRow: Decodable {
             let users: AppUser
@@ -180,8 +178,23 @@ final class SupabaseService {
         return rows.first?.role
     }
 
-    func joinClub(clubId: UUID, isPublic: Bool) async throws {
+    func joinClub(clubId: UUID, isPublic: Bool, memberCap: Int) async throws {
         guard let uid = currentUserID else { return }
+
+        if memberCap > 0 {
+            let liveCount: Int = try await client
+                .from("club_members")
+                .select("*", count: .exact)
+                .eq("club_id", value: clubId.uuidString)
+                .eq("status", value: "active")
+                .execute()
+                .count ?? 0
+
+            if liveCount >= memberCap {
+                throw AppError("This club is full.")
+            }
+        }
+
         let status = isPublic ? "active" : "pending"
         try await client.from("club_members").insert([
             "club_id": clubId.uuidString,
@@ -221,17 +234,12 @@ final class SupabaseService {
         cityLabel: String,
         isPublic: Bool,
         memberCap: Int,
-        coverImageURL: String?,
-        recurringDay: String?,
-        recurringTime: String?
+        coverImageURL: String?
     ) async throws -> Club {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
 
-        // Round to 2dp for GDPR (~1km precision)
         let roundedLat = (lat * 100).rounded() / 100
         let roundedLng = (lng * 100).rounded() / 100
-
-        // Supabase accepts PostGIS WKT for geography inserts
         let locationWKT = "SRID=4326;POINT(\(roundedLng) \(roundedLat))"
 
         struct ClubInsert: Encodable {
@@ -244,8 +252,6 @@ final class SupabaseService {
             let is_public: Bool
             let member_cap: Int
             let cover_image_url: String?
-            let recurring_day: String?
-            let recurring_time: String?
         }
 
         let insert = ClubInsert(
@@ -257,9 +263,7 @@ final class SupabaseService {
             city_label: cityLabel,
             is_public: isPublic,
             member_cap: memberCap,
-            cover_image_url: coverImageURL,
-            recurring_day: recurringDay,
-            recurring_time: recurringTime
+            cover_image_url: coverImageURL
         )
 
         let club: Club = try await client
@@ -270,7 +274,6 @@ final class SupabaseService {
             .execute()
             .value
 
-        // Add organiser as first member
         try await client.from("club_members").insert([
             "club_id": club.id.uuidString,
             "user_id": uid.uuidString,
@@ -290,74 +293,66 @@ final class SupabaseService {
             .eq("id", value: clubId.uuidString)
             .execute()
     }
-    
+
     // MARK: - Club Update (organiser only)
-  
-     func updateClub(
-         clubId: UUID,
-         name: String,
-         description: String?,
-         genreTags: [String],
-         lat: Double,
-         lng: Double,
-         cityLabel: String,
-         isPublic: Bool,
-         memberCap: Int,
-         coverImageURL: String?,
-         recurringDay: String?,
-         recurringTime: String?
-     ) async throws -> Club {
-         // Round to 2dp for GDPR (~1km precision)
-         let roundedLat = (lat * 100).rounded() / 100
-         let roundedLng = (lng * 100).rounded() / 100
-         let locationWKT = "SRID=4326;POINT(\(roundedLng) \(roundedLat))"
-  
-         struct ClubUpdate: Encodable {
-             let name: String
-             let description: String?
-             let genre_tags: [String]
-             let location: String
-             let city_label: String
-             let is_public: Bool
-             let member_cap: Int
-             let cover_image_url: String?
-             let recurring_day: String?
-             let recurring_time: String?
-         }
-  
-         let update = ClubUpdate(
-             name: name,
-             description: description,
-             genre_tags: genreTags,
-             location: locationWKT,
-             city_label: cityLabel,
-             is_public: isPublic,
-             member_cap: memberCap,
-             cover_image_url: coverImageURL,
-             recurring_day: recurringDay,
-             recurring_time: recurringTime
-         )
-  
-         return try await client
-             .from("clubs")
-             .update(update)
-             .eq("id", value: clubId.uuidString)
-             .select("*, books(*)")
-             .single()
-             .execute()
-             .value
-     }
-  
-     // MARK: - Club Delete (organiser only)
-  
-     func deleteClub(clubId: UUID) async throws {
-         try await client
-             .from("clubs")
-             .delete()
-             .eq("id", value: clubId.uuidString)
-             .execute()
-     }
-  
+
+    func updateClub(
+        clubId: UUID,
+        name: String,
+        description: String?,
+        genreTags: [String],
+        lat: Double,
+        lng: Double,
+        cityLabel: String,
+        isPublic: Bool,
+        memberCap: Int,
+        coverImageURL: String?
+    ) async throws -> Club {
+        let roundedLat = (lat * 100).rounded() / 100
+        let roundedLng = (lng * 100).rounded() / 100
+        let locationWKT = "SRID=4326;POINT(\(roundedLng) \(roundedLat))"
+
+        struct ClubUpdate: Encodable {
+            let name: String
+            let description: String?
+            let genre_tags: [String]
+            let location: String
+            let city_label: String
+            let is_public: Bool
+            let member_cap: Int
+            let cover_image_url: String?
+        }
+
+        let update = ClubUpdate(
+            name: name,
+            description: description,
+            genre_tags: genreTags,
+            location: locationWKT,
+            city_label: cityLabel,
+            is_public: isPublic,
+            member_cap: memberCap,
+            cover_image_url: coverImageURL
+        )
+
+        return try await client
+            .from("clubs")
+            .update(update)
+            .eq("id", value: clubId.uuidString)
+            .select("*, books(*)")
+            .single()
+            .execute()
+            .value
+    }
+
+    // MARK: - Club Delete (organiser only)
+
+    func deleteClub(clubId: UUID) async throws {
+        try await client
+            .from("clubs")
+            .delete()
+            .eq("id", value: clubId.uuidString)
+            .execute()
+    }
 
     // MARK: - Meetings
 
@@ -425,7 +420,6 @@ final class SupabaseService {
 
     // MARK: - Book archive
 
-    // Returns the meeting flagged as final for this club, if one exists.
     func fetchFinalMeeting(clubId: UUID) async throws -> Meeting? {
         let rows: [Meeting] = try await client
             .from("meetings")
@@ -439,13 +433,12 @@ final class SupabaseService {
         return rows.first
     }
 
-    // Writes the book to club_book_history and clears current_book_id on the club.
     func archiveBook(clubId: UUID, bookId: UUID) async throws {
         struct HistoryInsert: Encodable {
             let club_id: String
             let book_id: String
         }
-        
+
         try await client
             .from("club_book_history")
             .upsert(
@@ -456,9 +449,8 @@ final class SupabaseService {
                 onConflict: "club_id,book_id"
             )
             .execute()
-        
-        let clearBook: [String: AnyJSON] = ["current_book_id": .null]
 
+        let clearBook: [String: AnyJSON] = ["current_book_id": .null]
         try await client
             .from("clubs")
             .update(clearBook)
@@ -507,7 +499,7 @@ final class SupabaseService {
             .from("posts")
             .select("*, users(id, display_name, avatar_url)")
             .eq("club_id", value: clubId.uuidString)
-            .is("parent_post_id", value: nil)   // top-level announcements only
+            .is("parent_post_id", value: nil)
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -636,8 +628,8 @@ final class SupabaseService {
             .eq("id", value: clubId.uuidString)
             .execute()
     }
-    
-    // Vote Suggestions
+
+    // MARK: - Vote Suggestions
 
     func fetchSuggestions(sessionId: UUID) async throws -> [BookSuggestion] {
         guard let uid = currentUserID else { return [] }
@@ -656,7 +648,6 @@ final class SupabaseService {
             }
         }
 
-        // Fetch suggestions with vote counts
         let rows: [SuggestionRow] = try await client
             .rpc("get_vote_suggestions", params: [
                 "p_session_id": AnyJSON.string(sessionId.uuidString),
@@ -709,7 +700,7 @@ final class SupabaseService {
     }
 
     // MARK: - Book History
- 
+
     func fetchBookHistory(clubId: UUID) async throws -> [ClubBookHistory] {
         try await client
             .from("club_book_history")
@@ -719,9 +710,9 @@ final class SupabaseService {
             .execute()
             .value
     }
- 
+
     // MARK: - Reports
- 
+
     func reportPost(postId: UUID, reason: String?) async throws {
         guard let uid = currentUserID else { throw AppError("Not signed in") }
         try await client.from("reports").insert([
@@ -731,4 +722,3 @@ final class SupabaseService {
         ]).execute()
     }
 }
- 

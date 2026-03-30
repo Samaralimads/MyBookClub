@@ -45,14 +45,6 @@ final class CreateClubViewModel {
     var resolvedLat: Double? = nil
     var resolvedLng: Double? = nil
     
-    // Meeting Schedule
-    var frequency: MeetingFrequency? = nil
-    var recurringDay: String?        = nil
-    var recurringTime: Date          = Calendar.current.date(
-        bySettingHour: 19, minute: 0, second: 0,
-        of: .now
-    ) ?? .now
-    
     // Cover image
     var selectedPhotoItem: PhotosPickerItem? = nil {
         didSet { Task { await loadSelectedImage() } }
@@ -89,21 +81,6 @@ final class CreateClubViewModel {
         
         if let tag = club.genreTags.first {
             selectedGenre = Genre(rawValue: tag)
-        }
-        if let day = club.recurringDay {
-            recurringDay = day
-        }
-        if let timeString = club.recurringTime {
-            // Parse "HH:mm:ss" back into a Date so the DatePicker is pre-set
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
-            if let date = formatter.date(from: timeString) {
-                recurringTime = date
-            }
-        }
-        if let freq = club.recurringDay {
-            // Best-effort: keep whatever was stored; frequency isn't persisted separately
-            _ = freq
         }
     }
     
@@ -153,13 +130,6 @@ final class CreateClubViewModel {
         let lat = resolvedLat ?? locationService.roundedLatitude
         let lng = resolvedLng ?? locationService.roundedLongitude
         
-        let timeString: String? = {
-            guard recurringDay != nil else { return nil }
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
-            return formatter.string(from: recurringTime)
-        }()
-        
         do {
             var club = try await SupabaseService.shared.createClub(
                 name:          name.trimmingCharacters(in: .whitespaces),
@@ -171,8 +141,6 @@ final class CreateClubViewModel {
                 isPublic:      isPublic,
                 memberCap:     memberCap,
                 coverImageURL: nil,
-                recurringDay:  recurringDay,
-                recurringTime: timeString
             )
             
             if let image = coverImage {
@@ -200,13 +168,6 @@ final class CreateClubViewModel {
         let lat = resolvedLat ?? locationService.roundedLatitude
         let lng = resolvedLng ?? locationService.roundedLongitude
         
-        let timeString: String? = {
-            guard recurringDay != nil else { return nil }
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
-            return formatter.string(from: recurringTime)
-        }()
-        
         do {
             // Upload new cover if the user picked one
             var newCoverURL = existingCoverURL
@@ -225,8 +186,6 @@ final class CreateClubViewModel {
                 isPublic:      isPublic,
                 memberCap:     memberCap,
                 coverImageURL: newCoverURL,
-                recurringDay:  recurringDay,
-                recurringTime: timeString
             )
             
             createdClub = updated
