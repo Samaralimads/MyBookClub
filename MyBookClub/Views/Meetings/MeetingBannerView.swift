@@ -10,8 +10,283 @@ import EventKit
 
 struct MeetingBannerView: View {
     let meeting: Meeting
+    let isOrganiser: Bool
+    let rsvpStatus: RSVPStatus?
+    let rsvpCounts: RSVPCounts
+    let rsvpMembers: [RSVPMember]
+    let onRSVP: (RSVPStatus) -> Void
+    let onEdit: () -> Void
 
-    @State private var calendarAlertType: CalendarAlertType? = nil
+    @State private var calendarAlertType: CalendarAlertType?
+    @State private var showRSVPList = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            headerRow
+            metadataRows
+            rsvpSummaryRow
+            actionRow
+        }
+        .padding(Spacing.lg)
+        .background(Color.cardBackground)
+        .clipShape(.rect(cornerRadius: CornerRadius.card))
+        .overlay {
+            RoundedRectangle(cornerRadius: CornerRadius.card)
+                .stroke(Color.border, lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
+        .alert(item: $calendarAlertType) { type in
+            switch type {
+            case .added(let title):
+                Alert(
+                    title: Text("Added to Calendar"),
+                    message: Text("\"\(title)\" has been added to your calendar."),
+                    dismissButton: .default(Text("Great!"))
+                )
+            case .denied:
+                Alert(
+                    title: Text("Calendar Access Denied"),
+                    message: Text("Please allow calendar access in Settings."),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .error(let msg):
+                Alert(
+                    title: Text("Couldn't Add Event"),
+                    message: Text(msg),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+        .sheet(isPresented: $showRSVPList) {
+            RSVPListSheet(
+                meetingTitle: meeting.title,
+                rsvpMembers: rsvpMembers,
+                goingCount: rsvpCounts.goingCount,
+                notGoingCount: rsvpCounts.notGoingCount
+            )
+        }
+    }
+
+    // MARK: - Header
+
+    private var headerRow: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Upcoming Meeting")
+                    .font(.appHeadline)
+                    .foregroundStyle(.inkPrimary)
+                Text(meeting.title)
+                    .font(.appBody)
+                    .foregroundStyle(.inkSecondary)
+            }
+            Spacer()
+            if isOrganiser {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.inkSecondary)
+                        .frame(width: 36, height: 36)
+                        .background(Color.border.opacity(0.35))
+                        .clipShape(.circle)
+                }
+            }
+        }
+    }
+
+    // MARK: - Metadata rows
+
+    private var metadataRows: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            infoRow(
+                icon: "calendar",
+                text: meeting.scheduledAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
+            )
+            infoRow(
+                icon: "clock",
+                text: meeting.scheduledAt.formatted(.dateTime.hour().minute())
+            )
+            if let address = meeting.address, !address.isEmpty {
+                infoRow(icon: "mappin.and.ellipse", text: address)
+            }
+        }
+    }
+
+    private func infoRow(icon: String, text: String) -> some View {
+        HStack(spacing: Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(Color.purpleTint)
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.accent)
+            }
+            Text(text)
+                .font(.appBody.weight(.medium))
+                .foregroundStyle(.inkPrimary)
+        }
+    }
+
+    // MARK: - RSVP summary (avatar stack + counts, taps to full list)
+
+    @ViewBuilder
+    private var rsvpSummaryRow: some View {
+        let total = rsvpCounts.goingCount + rsvpCounts.notGoingCount
+        if total > 0 {
+            Button { showRSVPList = true } label: {
+                HStack(spacing: Spacing.sm) {
+                    RSVPAvatarStack(members: rsvpMembers.filter { $0.status == .going })
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        if rsvpCounts.goingCount > 0 {
+                            Text("^[\(rsvpCounts.goingCount) person](inflect: true) going")
+                                .font(.appCaption.weight(.semibold))
+                                .foregroundStyle(.inkPrimary)
+                        }
+                        if rsvpCounts.notGoingCount > 0 {
+                            Text("^[\(rsvpCounts.notGoingCount) person](inflect: true) not going")
+                                .font(.appCaption)
+                                .foregroundStyle(.inkSecondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.inkTertiary)
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(Color.purpleTint.opacity(0.5))
+                .clipShape(.rect(cornerRadius: CornerRadius.card))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Action row: RSVP menu + Add to Calendar
+
+    private var actionRow: some View {
+        HStack(spacing: Spacing.md) {
+            rsvpMenuButton
+            addToCalendarButton
+        }
+    }
+
+    private var rsvpMenuButton: some View {
+        Menu {
+            Button {
+                onRSVP(.going)
+            } label: {
+                Label(
+                    "Going",
+                    systemImage: rsvpStatus == .going
+                        ? "checkmark.circle.fill"
+                        : "checkmark.circle"
+                )
+            }
+
+            Button {
+                onRSVP(.notGoing)
+            } label: {
+                Label(
+                    "Not Going",
+                    systemImage: rsvpStatus == .notGoing
+                        ? "xmark.circle.fill"
+                        : "xmark.circle"
+                )
+            }
+        } label: {
+            HStack(spacing: Spacing.sm) {
+                Text(rsvpButtonLabel)
+                    .font(.appBody.weight(.semibold))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .foregroundStyle(rsvpForegroundColor)
+            .background(rsvpBackgroundColor)
+            .clipShape(.rect(cornerRadius: CornerRadius.button))
+            .overlay {
+                if rsvpStatus == .notGoing {
+                    RoundedRectangle(cornerRadius: CornerRadius.button)
+                        .stroke(Color.border, lineWidth: 1.5)
+                }
+            }
+        }
+        .animation(Animations.standard, value: rsvpStatus)
+    }
+
+    private var rsvpButtonLabel: String {
+        switch rsvpStatus {
+        case .going:    "Going ✓"
+        case .notGoing: "Not Going"
+        case nil:       "RSVP"
+        }
+    }
+
+    private var rsvpBackgroundColor: Color {
+        switch rsvpStatus {
+        case .going:    .accent
+        case .notGoing: .cardBackground
+        case nil:       .accent
+        }
+    }
+
+    private var rsvpForegroundColor: Color {
+        rsvpStatus == .notGoing ? .inkPrimary : .white
+    }
+
+    private var addToCalendarButton: some View {
+        Button {
+            Task { await addToCalendar() }
+        } label: {
+            Text("Add to Calendar")
+                .font(.appBody.weight(.semibold))
+                .foregroundStyle(.inkSecondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(Color.border.opacity(0.25))
+                .clipShape(.rect(cornerRadius: CornerRadius.button))
+        }
+    }
+
+    // MARK: - EventKit
+
+    private func addToCalendar() async {
+        let store = EKEventStore()
+        let granted: Bool
+        do {
+            granted = try await store.requestWriteOnlyAccessToEvents()
+        } catch {
+            calendarAlertType = .error(error.localizedDescription)
+            return
+        }
+        guard granted else {
+            calendarAlertType = .denied
+            return
+        }
+        let event = EKEvent(eventStore: store)
+        event.title     = meeting.title
+        event.startDate = meeting.scheduledAt
+        event.endDate   = meeting.scheduledAt.addingTimeInterval(7200)
+        event.notes     = meeting.address
+        if let address = meeting.address, !address.isEmpty {
+            event.structuredLocation = EKStructuredLocation(title: address)
+        }
+        event.addAlarm(EKAlarm(relativeOffset: -3600))
+        event.calendar = store.defaultCalendarForNewEvents
+        do {
+            try store.save(event, span: .thisEvent)
+            calendarAlertType = .added(title: meeting.title)
+        } catch {
+            calendarAlertType = .error(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Alert type
 
     private enum CalendarAlertType: Identifiable {
         case added(title: String)
@@ -26,140 +301,115 @@ struct MeetingBannerView: View {
             }
         }
     }
+}
+
+// MARK: - Mini avatar stack (going members only)
+
+private struct RSVPAvatarStack: View {
+    let members: [RSVPMember]
+
+    private let size: CGFloat    = 26
+    private let overlap: CGFloat = 8
+    private let maxShown         = 4
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Upcoming Meeting")
-                        .font(.appHeadline)
-                        .foregroundStyle(.inkPrimary)
-                    Text(meeting.title)
-                        .font(.appBody)
-                        .foregroundStyle(.inkSecondary)
+        HStack(spacing: -(overlap)) {
+            ForEach(members.prefix(maxShown)) { member in
+                AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Color.purpleTint)
+                        .overlay {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.accent)
+                        }
                 }
-            }
-
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                meetingRow(
-                    icon: "calendar",
-                    text: meeting.scheduledAt.formatted(
-                        .dateTime.weekday(.wide).month(.wide).day()
-                    )
-                )
-                meetingRow(
-                    icon: "clock",
-                    text: meeting.scheduledAt.formatted(.dateTime.hour().minute())
-                )
-                if let address = meeting.address, !address.isEmpty {
-                    meetingRow(icon: "mappin.and.ellipse", text: address)
-                }
-            }
-
-            Button {
-                Task { await addToCalendar() }
-            } label: {
-                Label("Add to Calendar", systemImage: "calendar.badge.plus")
-                    .font(.appCaption.weight(.semibold))
-                    .foregroundStyle(.accent)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(Color.accentSubtle)
-                    .clipShape(.rect(cornerRadius: CornerRadius.button))
-            }
-        }
-        .padding(Spacing.lg)
-        .background(Color.cardBackground)
-        .clipShape(.rect(cornerRadius: CornerRadius.card))
-        .overlay {
-            RoundedRectangle(cornerRadius: CornerRadius.card)
-                .stroke(Color.border, lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
-        //Calendar result alerts
-        .alert(item: $calendarAlertType) { type in
-            switch type {
-            case .added(let title):
-                return Alert(
-                    title: Text("Added to Calendar"),
-                    message: Text("\"\(title)\" has been added to your calendar."),
-                    dismissButton: .default(Text("Great!"))
-                )
-            case .denied:
-                return Alert(
-                    title: Text("Calendar Access Denied"),
-                    message: Text("Please allow calendar access in Settings to use this feature."),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .error(let msg):
-                return Alert(
-                    title: Text("Couldn't Add Event"),
-                    message: Text(msg),
-                    dismissButton: .default(Text("OK"))
-                )
+                .frame(width: size, height: size)
+                .clipShape(.circle)
+                .overlay { Circle().stroke(Color.cardBackground, lineWidth: 1.5) }
             }
         }
     }
+}
 
-    // MARK: - Row helper
+// MARK: - RSVP list sheet
 
-    private func meetingRow(icon: String, text: String) -> some View {
-        HStack(spacing: Spacing.md) {
+struct RSVPListSheet: View {
+    let meetingTitle: String
+    let rsvpMembers: [RSVPMember]
+    let goingCount: Int
+    let notGoingCount: Int
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var going: [RSVPMember]    { rsvpMembers.filter { $0.status == .going    } }
+    private var notGoing: [RSVPMember] { rsvpMembers.filter { $0.status == .notGoing } }
+
+    var body: some View {
+        NavigationStack {
             ZStack {
+                Color.background.ignoresSafeArea()
+                Group {
+                    if rsvpMembers.isEmpty {
+                        ContentUnavailableView(
+                            "No RSVPs yet",
+                            systemImage: "person.slash",
+                            description: Text("Be the first to RSVP to this meeting.")
+                        )
+                    } else {
+                        List {
+                            if !going.isEmpty {
+                                Section("Going (\(goingCount))") {
+                                    ForEach(going) { RSVPMemberRow(member: $0) }
+                                }
+                            }
+                            if !notGoing.isEmpty {
+                                Section("Not Going (\(notGoingCount))") {
+                                    ForEach(notGoing) { RSVPMemberRow(member: $0) }
+                                }
+                            }
+                        }
+                        .listStyle(.insetGrouped)
+                        .scrollContentBackground(.hidden)
+                    }
+                }
+            }
+            .navigationTitle(meetingTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundStyle(.accent)
+                }
+            }
+        }
+    }
+}
+
+private struct RSVPMemberRow: View {
+    let member: RSVPMember
+
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
                 Circle()
                     .fill(Color.purpleTint)
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.accent)
+                    .overlay {
+                        Image(systemName: "person.fill").foregroundStyle(.accent)
+                    }
             }
-            Text(text)
-                .font(.appBody.weight(.semibold))
+            .frame(width: 40, height: 40)
+            .clipShape(.circle)
+
+            Text(member.displayName)
+                .font(.appBody)
                 .foregroundStyle(.inkPrimary)
         }
-    }
-
-    // MARK: - EventKit
-
-    private func addToCalendar() async {
-        let store = EKEventStore()
-
-        let granted: Bool
-        do {
-            granted = try await store.requestWriteOnlyAccessToEvents()
-        } catch {
-            calendarAlertType = .error(error.localizedDescription)
-            return
-        }
-
-        guard granted else {
-            calendarAlertType = .denied
-            return
-        }
-
-        let event        = EKEvent(eventStore: store)
-        event.title      = meeting.title
-        event.startDate  = meeting.scheduledAt
-        event.endDate    = meeting.scheduledAt.addingTimeInterval(7200) // default 2h
-        event.notes      = meeting.address
-
-        if let address = meeting.address, !address.isEmpty {
-            let location        = EKStructuredLocation(title: address)
-            event.structuredLocation = location
-        }
-
-        // Add a 1-hour-before alarm
-        event.addAlarm(EKAlarm(relativeOffset: -3600))
-
-        event.calendar = store.defaultCalendarForNewEvents
-
-        do {
-            try store.save(event, span: .thisEvent)
-            calendarAlertType = .added(title: meeting.title)
-        } catch {
-            calendarAlertType = .error(error.localizedDescription)
-        }
+        .listRowBackground(Color.cardBackground)
     }
 }
 
@@ -176,13 +426,19 @@ struct MeetingBannerView: View {
             toChapter: 10,
             chapterTitles: nil,
             notes: nil,
-            address: "Blue Bottle Coffee, Downtown",
+            address: "123 Main St",
             isFinal: false,
             notifSent24h: false,
             notifSent1h: false,
             createdAt: .now,
             clubName: "Downtown Readers"
-        )
+        ),
+        isOrganiser: true,
+        rsvpStatus: .going,
+        rsvpCounts: RSVPCounts(goingCount: 3, notGoingCount: 1),
+        rsvpMembers: [],
+        onRSVP: { _ in },
+        onEdit: {}
     )
     .padding(Spacing.lg)
 }

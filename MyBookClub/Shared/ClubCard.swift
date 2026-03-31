@@ -68,7 +68,7 @@ struct ClubCard: View {
                     .foregroundStyle(.inkSecondary)
 
                     HStack(spacing: 4) {
-                        Image(systemName: "mappin")
+                        Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 11))
                         Text(club.cityLabel.split(separator: ",").first.map(String.init) ?? "")
                             .font(.appCaption)

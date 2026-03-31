@@ -417,6 +417,119 @@ final class SupabaseService {
             .execute()
             .value
     }
+    
+    
+    func updateMeeting(
+        meetingId: UUID,
+        title: String,
+        scheduledAt: Date,
+        fromChapter: Int?,
+        toChapter: Int?,
+        chapterTitles: [String]?,
+        notes: String? = nil,
+        address: String?,
+        isFinal: Bool
+    ) async throws -> Meeting {
+        struct MeetingUpdate: Encodable {
+            let title: String
+            let scheduled_at: String
+            let from_chapter: Int?
+            let to_chapter: Int?
+            let chapter_titles: [String]?
+            let notes: String?
+            let address: String?
+            let is_final: Bool
+        }
+ 
+        let update = MeetingUpdate(
+            title:          title,
+            scheduled_at:   iso8601.string(from: scheduledAt),
+            from_chapter:   fromChapter,
+            to_chapter:     toChapter,
+            chapter_titles: chapterTitles,
+            notes:          notes,
+            address:        address,
+            is_final:       isFinal
+        )
+ 
+        return try await client
+            .from("meetings")
+            .update(update)
+            .eq("id", value: meetingId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+    
+    
+    // MARK: - Meeting RSVPs
+ 
+    func fetchMyRSVP(meetingId: UUID) async throws -> MeetingRSVP? {
+        let rows: [MeetingRSVP] = try await client
+            .rpc("get_my_rsvp", params: ["p_meeting_id": AnyJSON.string(meetingId.uuidString)])
+            .execute()
+            .value
+        return rows.first
+    }
+ 
+
+    @discardableResult
+    func upsertRSVP(meetingId: UUID, clubId: UUID, status: RSVPStatus) async throws -> MeetingRSVP {
+        guard let uid = currentUserID else { throw AppError("Not signed in") }
+ 
+        struct RSVPUpsert: Encodable {
+            let meeting_id: String
+            let club_id: String
+            let user_id: String
+            let status: String
+        }
+ 
+        let payload = RSVPUpsert(
+            meeting_id: meetingId.uuidString,
+            club_id:    clubId.uuidString,
+            user_id:    uid.uuidString,
+            status:     status.rawValue
+        )
+ 
+        return try await client
+            .from("meeting_rsvps")
+            .upsert(payload, onConflict: "meeting_id,user_id")
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+ 
+    func deleteRSVP(meetingId: UUID) async throws {
+        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        try await client
+            .from("meeting_rsvps")
+            .delete()
+            .eq("meeting_id", value: meetingId.uuidString)
+            .eq("user_id",    value: uid.uuidString)
+            .execute()
+    }
+ 
+    func fetchRSVPMembers(meetingId: UUID) async throws -> [RSVPMember] {
+        try await client
+            .rpc("get_meeting_rsvps", params: ["p_meeting_id": AnyJSON.string(meetingId.uuidString)])
+            .execute()
+            .value
+    }
+ 
+    func fetchRSVPCounts(meetingId: UUID) async throws -> RSVPCounts {
+        let rows: [RSVPCounts] = try await client
+            .from("meeting_rsvp_counts")
+            .select("going_count,not_going_count")
+            .eq("meeting_id", value: meetingId.uuidString)
+            .execute()
+            .value
+        // If there are no RSVPs yet the view returns no row — default to zeros.
+        return rows.first ?? RSVPCounts(goingCount: 0, notGoingCount: 0)
+    }
+ 
+
 
     // MARK: - Book archive
 

@@ -33,6 +33,15 @@ struct PlanMeetingSheet: View {
         return to - from + 1
     }
 
+    // MARK: - Form validation
+    private var isFormValid: Bool {
+        guard let from = fromChapter,
+              let to = toChapter,
+              from <= to else { return false }
+
+        return !locationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -44,7 +53,6 @@ struct PlanMeetingSheet: View {
                     finalMeetingSection
                     Spacer()
                     actionButtons
-
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.xl)
@@ -95,7 +103,6 @@ struct PlanMeetingSheet: View {
                 chapterTextField(label: "To Chapter",   text: $toChapterText,   placeholder: "10")
             }
 
-            // Chapter titles toggle + fields
             VStack(spacing: 0) {
                 Toggle(isOn: $includeChapterTitles) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -109,6 +116,7 @@ struct PlanMeetingSheet: View {
                 }
                 .tint(.accent)
                 .padding(Spacing.md)
+                .disabled(chapterCount == 0)
 
                 if includeChapterTitles && chapterCount > 0 {
                     Divider()
@@ -125,6 +133,7 @@ struct PlanMeetingSheet: View {
             Text(label)
                 .font(.appCaption)
                 .foregroundStyle(.inkSecondary)
+
             TextField(placeholder, text: text)
                 .keyboardType(.numberPad)
                 .font(.appBody)
@@ -199,7 +208,7 @@ struct PlanMeetingSheet: View {
         }
     }
 
-    // MARK: - Location (global place autocomplete)
+    // MARK: - Location
 
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -208,11 +217,11 @@ struct PlanMeetingSheet: View {
                 .foregroundStyle(.inkPrimary)
 
             VStack(alignment: .leading, spacing: 0) {
-                // Input row
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "mappin")
                         .font(.system(size: 15))
                         .foregroundStyle(.inkSecondary)
+
                     TextField("Café, bookshop, address…", text: $locationText)
                         .font(.appBody)
                         .foregroundStyle(.inkPrimary)
@@ -220,9 +229,10 @@ struct PlanMeetingSheet: View {
                         .onChange(of: locationText) { _, newValue in
                             placeSearch.query = newValue
                         }
+
                     if !locationText.isEmpty {
                         Button {
-                            locationText      = ""
+                            locationText = ""
                             placeSearch.query = ""
                         } label: {
                             Image(systemName: "xmark.circle.fill")
@@ -233,16 +243,6 @@ struct PlanMeetingSheet: View {
                 .padding(.horizontal, Spacing.md)
                 .frame(height: 50)
                 .background(Color.cardBackground)
-                .clipShape(
-                    placeSearch.suggestions.isEmpty
-                        ? AnyShape(.rect(cornerRadius: CornerRadius.card))
-                        : AnyShape(UnevenRoundedRectangle(
-                            topLeadingRadius: CornerRadius.card,
-                            bottomLeadingRadius: 0,
-                            bottomTrailingRadius: 0,
-                            topTrailingRadius: CornerRadius.card
-                        ))
-                )
                 .overlay {
                     AnyShape(UnevenRoundedRectangle(
                         topLeadingRadius: CornerRadius.card,
@@ -253,23 +253,24 @@ struct PlanMeetingSheet: View {
                     .stroke(Color.border, lineWidth: 1)
                 }
 
-                // Suggestions dropdown
                 if !placeSearch.suggestions.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(placeSearch.completionResults.enumerated()), id: \.offset) { index, result in
                             Button {
-                                locationText      = placeSearch.suggestions[index]
+                                locationText = placeSearch.suggestions[index]
                                 placeSearch.query = ""
                             } label: {
                                 HStack(spacing: Spacing.sm) {
                                     Image(systemName: "mappin.circle")
                                         .font(.system(size: 14))
                                         .foregroundStyle(.accent)
+
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(result.title)
                                             .font(.appBody)
                                             .foregroundStyle(.inkPrimary)
                                             .lineLimit(1)
+
                                         if !result.subtitle.isEmpty {
                                             Text(result.subtitle)
                                                 .font(.appCaption)
@@ -283,32 +284,18 @@ struct PlanMeetingSheet: View {
                                 .frame(minHeight: 48)
                                 .background(Color.cardBackground)
                             }
+
                             if index < placeSearch.completionResults.count - 1 {
                                 Divider()
-                                    .padding(.leading, Spacing.xl + Spacing.md)
                             }
                         }
-                    }
-                    .clipShape(UnevenRoundedRectangle(
-                        topLeadingRadius: 0,
-                        bottomLeadingRadius: CornerRadius.card,
-                        bottomTrailingRadius: CornerRadius.card,
-                        topTrailingRadius: 0
-                    ))
-                    .overlay {
-                        UnevenRoundedRectangle(
-                            topLeadingRadius: 0,
-                            bottomLeadingRadius: CornerRadius.card,
-                            bottomTrailingRadius: CornerRadius.card,
-                            topTrailingRadius: 0
-                        )
-                        .stroke(Color.border, lineWidth: 1)
                     }
                 }
             }
         }
     }
-    // MARK: - Final Meeting toggle
+
+    // MARK: - Final Meeting
 
     private var finalMeetingSection: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -328,8 +315,8 @@ struct PlanMeetingSheet: View {
             .clipShape(.rect(cornerRadius: CornerRadius.card))
         }
     }
-    
-    // MARK: - Action Buttons
+
+    // MARK: - Actions
 
     private var actionButtons: some View {
         HStack(spacing: Spacing.md) {
@@ -337,14 +324,12 @@ struct PlanMeetingSheet: View {
                 .buttonStyle(SecondaryButtonStyle())
 
             Button {
-                let from = fromChapter
-                let to   = toChapter
                 let titlesToSend: [String]? = includeChapterTitles && chapterCount > 0
                     ? Array(chapterTitles.prefix(chapterCount))
                     : nil
 
                 let meetingTitle: String
-                if let f = from, let t = to, f <= t {
+                if let f = fromChapter, let t = toChapter, f <= t {
                     meetingTitle = "Book Discussion: Chapters \(f)-\(t)"
                 } else {
                     meetingTitle = "Book Discussion"
@@ -353,8 +338,8 @@ struct PlanMeetingSheet: View {
                 onSchedule(
                     meetingTitle,
                     date,
-                    from,
-                    to,
+                    fromChapter,
+                    toChapter,
                     titlesToSend,
                     locationText.isEmpty ? nil : locationText,
                     isFinalMeeting
@@ -371,7 +356,7 @@ struct PlanMeetingSheet: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
-            .disabled(isScheduling)
+            .disabled(isScheduling || !isFormValid)
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, Spacing.md)
@@ -401,11 +386,13 @@ struct PlanMeetingSheet: View {
         toChapterText   = m.toChapter.map(String.init) ?? ""
         date            = m.scheduledAt
         locationText    = m.address ?? ""
-        isFinalMeeting = m.isFinal
+        isFinalMeeting  = m.isFinal
+
         if let titles = m.chapterTitles, !titles.isEmpty {
             includeChapterTitles = true
             chapterTitles = titles
         }
+
         resizeChapterTitles(to: chapterCount)
     }
 }

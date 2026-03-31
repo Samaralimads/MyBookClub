@@ -30,29 +30,55 @@ struct ClubDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                heroHeader
-                clubInfo
-                joinButton
-                tabBar
-                tabContent
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.top, Spacing.xl)
+        ZStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    heroHeader
+                    if !vm.isLoading {
+                        clubInfo
+                        joinButton
+                        tabBar
+                        tabContent
+                            .padding(.horizontal, Spacing.lg)
+                            .padding(.top, Spacing.xl)
+                    }
+                }
+            }
+            .background(Color.background)
+            .ignoresSafeArea(edges: .top)
+            
+            if vm.isLoading {
+                VStack {
+                    Color.clear.frame(height: 260)
+                    ZStack {
+                        Color.background.ignoresSafeArea(edges: .bottom)
+                        VStack(spacing: Spacing.lg) {
+                            ProgressView()
+                                .tint(.accent)
+                                .scaleEffect(1.2)
+                            Text("Loading club…")
+                                .font(.appCaption)
+                                .foregroundStyle(.inkTertiary)
+                        }
+                        .frame(maxHeight: .infinity)
+                    }
+                }
+                .transition(.opacity)
             }
         }
-        .background(Color.background)
-        .ignoresSafeArea(edges: .top)
+        .animation(Animations.standard, value: vm.isLoading)
         .task {
-            await vm.loadMembership(clubId: club.id)
-            await vm.loadNextMeeting(clubId: club.id)
-            await vm.loadMembers(clubId: club.id)
-            if let fresh = await vm.reloadClub(clubId: club.id) {
-                currentClub = fresh
-                // Show alert if organiser opens a full club
-                if vm.isOrganiser && vm.isAtCapacity(club: fresh) {
-                    vm.showCapacityReachedAlert = true
+            // Single parallel load — isLoading stays true until all done.
+            async let clubLoad: Void = {
+                if let fresh = await vm.reloadClub(clubId: club.id) {
+                    currentClub = fresh
                 }
+            }()
+            async let dataLoad: Void = vm.loadAll(clubId: club.id)
+            _ = await (clubLoad, dataLoad)
+
+            if vm.isOrganiser && vm.isAtCapacity(club: currentClub) {
+                vm.showCapacityReachedAlert = true
             }
         }
         .toolbar {
@@ -84,36 +110,36 @@ struct ClubDetailView: View {
                 )
             }
         }
-        // Organiser capacity alert
         .alert("Your club is full 🎉", isPresented: $vm.showCapacityReachedAlert) {
             Button("Raise Capacity") { showSettings = true }
             Button("OK", role: .cancel) { }
         } message: {
-            let cap = currentClub.memberCap
-            Text("You've reached your \(cap)-member limit. No new members can join until you raise the capacity in Club Settings.")
+            Text("You've reached your \(currentClub.memberCap)-member limit. No new members can join until you raise the capacity in Club Settings.")
         }
     }
 
     private var shareURL: URL {
-        URL(string: "https://mybookclub.app/club/\(club.id.uuidString)") ?? URL(string: "https://mybookclub.app")!
+        URL(string: "https://mybookclub.app/club/\(club.id.uuidString)")
+            ?? URL(string: "https://mybookclub.app")!
     }
 
     // MARK: - Hero
-
+    
     private var heroHeader: some View {
         AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }) { image in
             image.resizable().scaledToFill()
         } placeholder: {
             LinearGradient(
                 colors: [Color.accent.opacity(0.7), Color.accent.opacity(0.35)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
         }
         .frame(maxWidth: .infinity, minHeight: 260)
         .clipped()
     }
 
-    // MARK: - Club Info
+    // MARK: - Club info strip
 
     private var clubInfo: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -130,10 +156,8 @@ struct ClubDetailView: View {
                 .foregroundStyle(.inkPrimary)
 
             HStack(spacing: Spacing.xl) {
-                // Member count — shows x/cap if cap is set
                 HStack(spacing: 6) {
-                    Image(systemName: "person.2")
-                        .font(.system(size: 14))
+                    Image(systemName: "person.2").font(.system(size: 14))
                     if currentClub.memberCap > 0 {
                         Text("\(currentClub.memberCount ?? 0)/\(currentClub.memberCap)")
                             .font(.appBody)
@@ -143,8 +167,7 @@ struct ClubDetailView: View {
                     }
                 }
                 HStack(spacing: 6) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 14))
+                    Image(systemName: "mappin.and.ellipse").font(.system(size: 14))
                     Text(currentClub.cityLabel)
                         .font(.appBody)
                         .lineLimit(1)
@@ -165,93 +188,100 @@ struct ClubDetailView: View {
         .padding(.bottom, -CornerRadius.sheet)
     }
 
-    // MARK: - Join Button
+    // MARK: - Join / membership button
 
     @ViewBuilder
     private var joinButton: some View {
         if vm.isOrganiser {
             EmptyView()
         } else if vm.membershipStatus == .pending {
+            pendingLabel
+        } else if vm.isMember {
+            joinedMenu
+        } else if vm.isAtCapacity(club: currentClub) {
+            fullLabel
+        } else {
+            joinAction
+        }
+    }
+
+    private var pendingLabel: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "clock").font(.system(size: 15))
+            Text("Request Pending").font(.appBody.weight(.semibold))
+        }
+        .foregroundStyle(.inkSecondary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.md + 2)
+        .background(Color.border.opacity(0.4))
+        .clipShape(.rect(cornerRadius: 50))
+        .padding(.horizontal, Spacing.lg)
+        .padding(.bottom, Spacing.md)
+    }
+
+    private var joinedMenu: some View {
+        Menu {
+            Button(role: .none) { } label: {
+                Label("Manage Notifications", systemImage: "bell")
+            }
+            Divider()
+            Button(role: .destructive) {
+                Task { await vm.leaveClub(clubId: club.id) }
+            } label: {
+                Label("Leave Club", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
             HStack(spacing: Spacing.sm) {
-                Image(systemName: "clock")
-                    .font(.system(size: 15))
-                Text("Request Pending")
-                    .font(.appBody.weight(.semibold))
+                Image(systemName: "checkmark").font(.system(size: 13, weight: .bold))
+                Text("Joined").font(.appBody.weight(.semibold))
+                Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold))
             }
             .foregroundStyle(.inkSecondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Spacing.md + 2)
             .background(Color.border.opacity(0.4))
-            .clipShape(RoundedRectangle(cornerRadius: 50))
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-        } else if vm.isMember {
-            Menu {
-                Button(role: .none) {
-                    // TODO: notification preferences
-                } label: {
-                    Label("Manage Notifications", systemImage: "bell")
-                }
-                Divider()
-                Button(role: .destructive) {
-                    Task { await vm.leaveClub(clubId: club.id) }
-                } label: {
-                    Label("Leave Club", systemImage: "rectangle.portrait.and.arrow.right")
-                }
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 13, weight: .bold))
-                    Text("Joined")
-                        .font(.appBody.weight(.semibold))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundStyle(.inkSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md + 2)
-                .background(Color.border.opacity(0.4))
-                .clipShape(RoundedRectangle(cornerRadius: 50))
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-        } else if vm.isAtCapacity(club: currentClub) {
-            // Club is full — show disabled state with count
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: "person.fill.xmark")
-                    .font(.system(size: 15))
-                Text("Club Full (\(currentClub.memberCount ?? 0)/\(currentClub.memberCap))")
-                    .font(.appBody.weight(.semibold))
-            }
-            .foregroundStyle(.inkTertiary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.md + 2)
-            .background(Color.border.opacity(0.3))
-            .clipShape(RoundedRectangle(cornerRadius: 50))
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-        } else {
-            Button {
-                Task { await vm.joinClub(club: currentClub) }
-            } label: {
-                Group {
-                    if vm.isJoining {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text(club.isPublic ? "Join Club" : "Request to Join")
-                            .font(.appBody.weight(.semibold))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-            .disabled(vm.isJoining)
+            .clipShape(.rect(cornerRadius: 50))
         }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.bottom, Spacing.md)
     }
 
-    // MARK: - Tab Bar
+    private var fullLabel: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "person.fill.xmark").font(.system(size: 15))
+            Text("Club Full (\(currentClub.memberCount ?? 0)/\(currentClub.memberCap))")
+                .font(.appBody.weight(.semibold))
+        }
+        .foregroundStyle(.inkTertiary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.md + 2)
+        .background(Color.border.opacity(0.3))
+        .clipShape(.rect(cornerRadius: 50))
+        .padding(.horizontal, Spacing.lg)
+        .padding(.bottom, Spacing.md)
+    }
+
+    private var joinAction: some View {
+        Button {
+            Task { await vm.joinClub(club: currentClub) }
+        } label: {
+            Group {
+                if vm.isJoining {
+                    ProgressView().tint(.white)
+                } else {
+                    Text(club.isPublic ? "Join Club" : "Request to Join")
+                        .font(.appBody.weight(.semibold))
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .padding(.horizontal, Spacing.lg)
+        .padding(.bottom, Spacing.md)
+        .disabled(vm.isJoining)
+    }
+
+    // MARK: - Tab bar
 
     private var tabBar: some View {
         VStack(spacing: 0) {
@@ -266,7 +296,6 @@ struct ClubDetailView: View {
                                 .foregroundStyle(selectedTab == tab ? .accent : .inkSecondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, Spacing.md)
-
                             Rectangle()
                                 .fill(selectedTab == tab ? Color.accentColor : Color.clear)
                                 .frame(height: 2)
@@ -278,7 +307,7 @@ struct ClubDetailView: View {
         }
     }
 
-    // MARK: - Tab Content
+    // MARK: - Tab content
 
     @ViewBuilder
     private var tabContent: some View {
@@ -286,11 +315,7 @@ struct ClubDetailView: View {
         case .about:
             ClubAboutTab(
                 club: currentClub,
-                isOrganiser: vm.isOrganiser,
-                isMember: vm.isMember,
-                nextMeeting: vm.nextMeeting,
-                isScheduling: vm.isScheduling,
-                members: vm.members,
+                vm: vm,
                 onSchedule: { title, date, from, to, titles, address, isFinal in
                     Task {
                         await vm.scheduleMeeting(
@@ -304,29 +329,47 @@ struct ClubDetailView: View {
                             isFinal: isFinal
                         )
                     }
+                },
+                onUpdateMeeting: { title, date, from, to, titles, address, isFinal in
+                    Task {
+                        await vm.updateMeeting(
+                            clubId: club.id,
+                            title: title,
+                            scheduledAt: date,
+                            fromChapter: from,
+                            toChapter: to,
+                            chapterTitles: titles,
+                            address: address,
+                            isFinal: isFinal
+                        )
+                    }
                 }
             )
+
         case .book:
             ClubBookTab(
                 club: currentClub,
                 isMember: vm.isMember,
                 nextMeeting: vm.nextMeeting
             )
+
         case .board:
             ClubBoardTab(
                 club: currentClub,
                 isOrganiser: vm.isOrganiser
             )
+
         case .vote:
             ClubVoteTab(
                 club: currentClub,
                 isMember: vm.isMember,
                 isOrganiser: vm.isOrganiser,
                 onWinnerPicked: { book in
-                    currentClub.currentBook = book
+                    currentClub.currentBook   = book
                     currentClub.currentBookId = book.id
                 }
             )
+
         case .history:
             ClubHistoryTab(club: currentClub)
         }
