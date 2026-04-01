@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import EventKit
 
 struct MeetingBannerView: View {
     let meeting: Meeting
@@ -127,7 +126,7 @@ struct MeetingBannerView: View {
         }
     }
 
-    // MARK: - RSVP summary (avatar stack + counts, taps to full list)
+    // MARK: - RSVP summary
 
     @ViewBuilder
     private var rsvpSummaryRow: some View {
@@ -165,7 +164,7 @@ struct MeetingBannerView: View {
         }
     }
 
-    // MARK: - Action row: RSVP menu + Add to Calendar
+    // MARK: - Action row
 
     private var actionRow: some View {
         HStack(spacing: Spacing.md) {
@@ -181,20 +180,15 @@ struct MeetingBannerView: View {
             } label: {
                 Label(
                     "Going",
-                    systemImage: rsvpStatus == .going
-                        ? "checkmark.circle.fill"
-                        : "checkmark.circle"
+                    systemImage: rsvpStatus == .going ? "checkmark.circle.fill" : "checkmark.circle"
                 )
             }
-
             Button {
                 onRSVP(.notGoing)
             } label: {
                 Label(
                     "Not Going",
-                    systemImage: rsvpStatus == .notGoing
-                        ? "xmark.circle.fill"
-                        : "xmark.circle"
+                    systemImage: rsvpStatus == .notGoing ? "xmark.circle.fill" : "xmark.circle"
                 )
             }
         } label: {
@@ -219,26 +213,6 @@ struct MeetingBannerView: View {
         .animation(Animations.standard, value: rsvpStatus)
     }
 
-    private var rsvpButtonLabel: String {
-        switch rsvpStatus {
-        case .going:    "Going ✓"
-        case .notGoing: "Not Going"
-        case nil:       "RSVP"
-        }
-    }
-
-    private var rsvpBackgroundColor: Color {
-        switch rsvpStatus {
-        case .going:    .accent
-        case .notGoing: .cardBackground
-        case nil:       .accent
-        }
-    }
-
-    private var rsvpForegroundColor: Color {
-        rsvpStatus == .notGoing ? .inkPrimary : .white
-    }
-
     private var addToCalendarButton: some View {
         Button {
             Task { await addToCalendar() }
@@ -253,36 +227,30 @@ struct MeetingBannerView: View {
         }
     }
 
-    // MARK: - EventKit
+    private var rsvpButtonLabel: String {
+        switch rsvpStatus {
+        case .going:    "Going ✓"
+        case .notGoing: "Not Going"
+        case nil:       "RSVP"
+        }
+    }
+
+    private var rsvpBackgroundColor: Color {
+        rsvpStatus == .notGoing ? .cardBackground : .accent
+    }
+
+    private var rsvpForegroundColor: Color {
+        rsvpStatus == .notGoing ? .inkSecondary : .white
+    }
+
+    // MARK: - Calendar 
 
     private func addToCalendar() async {
-        let store = EKEventStore()
-        let granted: Bool
-        do {
-            granted = try await store.requestWriteOnlyAccessToEvents()
-        } catch {
-            calendarAlertType = .error(error.localizedDescription)
-            return
-        }
-        guard granted else {
-            calendarAlertType = .denied
-            return
-        }
-        let event = EKEvent(eventStore: store)
-        event.title     = meeting.title
-        event.startDate = meeting.scheduledAt
-        event.endDate   = meeting.scheduledAt.addingTimeInterval(7200)
-        event.notes     = meeting.address
-        if let address = meeting.address, !address.isEmpty {
-            event.structuredLocation = EKStructuredLocation(title: address)
-        }
-        event.addAlarm(EKAlarm(relativeOffset: -3600))
-        event.calendar = store.defaultCalendarForNewEvents
-        do {
-            try store.save(event, span: .thisEvent)
-            calendarAlertType = .added(title: meeting.title)
-        } catch {
-            calendarAlertType = .error(error.localizedDescription)
+        let result = await CalendarService.shared.addMeeting(meeting)
+        switch result {
+        case .success:            calendarAlertType = .added(title: meeting.title)
+        case .denied:             calendarAlertType = .denied
+        case .failure(let error): calendarAlertType = .error(error.localizedDescription)
         }
     }
 
@@ -303,7 +271,7 @@ struct MeetingBannerView: View {
     }
 }
 
-// MARK: - Mini avatar stack (going members only)
+// MARK: - Mini avatar stack
 
 private struct RSVPAvatarStack: View {
     let members: [RSVPMember]
@@ -313,7 +281,7 @@ private struct RSVPAvatarStack: View {
     private let maxShown         = 4
 
     var body: some View {
-        HStack(spacing: -(overlap)) {
+        HStack(spacing: -overlap) {
             ForEach(members.prefix(maxShown)) { member in
                 AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
                     image.resizable().scaledToFill()
@@ -431,7 +399,11 @@ private struct RSVPMemberRow: View {
             notifSent24h: false,
             notifSent1h: false,
             createdAt: .now,
-            clubName: "Downtown Readers"
+            clubName: "Downtown Readers",
+            clubCoverImageURL: nil,
+            bookTitle: nil,
+            bookAuthor: nil,
+            bookCoverURL: nil
         ),
         isOrganiser: true,
         rsvpStatus: .going,

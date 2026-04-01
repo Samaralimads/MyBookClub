@@ -22,33 +22,41 @@ struct Meeting: Codable, Identifiable, Hashable {
     var notifSent1h: Bool
     let createdAt: Date
 
-    // Joined
+    // Joined from clubs
     var clubName: String?
+    var clubCoverImageURL: String?
+
+    // Joined from clubs → books
+    var bookTitle: String?
+    var bookAuthor: String?
+    var bookCoverURL: String?
 
     enum CodingKeys: String, CodingKey {
         case id
-        case clubId        = "club_id"
+        case clubId           = "club_id"
         case title
-        case scheduledAt   = "scheduled_at"
-        case fromChapter   = "from_chapter"
-        case toChapter     = "to_chapter"
-        case chapterTitles = "chapter_titles"
+        case scheduledAt      = "scheduled_at"
+        case fromChapter      = "from_chapter"
+        case toChapter        = "to_chapter"
+        case chapterTitles    = "chapter_titles"
         case notes
         case address
-        case isFinal       = "is_final"
-        case notifSent24h  = "notif_sent_24h"
-        case notifSent1h   = "notif_sent_1h"
-        case createdAt     = "created_at"
-        case clubName      = "club_name"
+        case isFinal          = "is_final"
+        case notifSent24h     = "notif_sent_24h"
+        case notifSent1h      = "notif_sent_1h"
+        case createdAt        = "created_at"
+        case clubName         = "club_name"
+        case clubCoverImageURL = "club_cover_image_url"
+        case bookTitle        = "book_title"
+        case bookAuthor       = "book_author"
+        case bookCoverURL     = "book_cover_url"
     }
 
-    // The assigned chapter range for this meeting, if both bounds are set.
     var chapterRange: ClosedRange<Int>? {
         guard let from = fromChapter, let to = toChapter, from <= to else { return nil }
         return from...to
     }
 
-    // Title for a specific chapter number, if chapter titles were provided.
     func title(for chapter: Int) -> String? {
         guard let from = fromChapter, let titles = chapterTitles else { return nil }
         let index = chapter - from

@@ -8,26 +8,106 @@
 import SwiftUI
 
 struct MeetingsView: View {
+    @State private var vm = MeetingsViewModel()
+    @State private var selectedSegment: MeetingSegment = .upcoming
+    @State private var selectedMeeting: Meeting? = nil
+
     var body: some View {
         ZStack {
             Color.background.ignoresSafeArea()
-            VStack(spacing: Spacing.lg) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.accent)
-                Text("Meetings")
-                    .font(.appTitle)
-                    .foregroundStyle(.inkPrimary)
-                Text("Cross-club meeting list coming in Part 3")
-                    .font(.appBody)
-                    .foregroundStyle(.inkSecondary)
+
+            VStack(spacing: 0) {
+                segmentPicker
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
+
+                meetingList
             }
         }
         .navigationTitle("Meetings")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
+        .task { await vm.load() }
+        .navigationDestination(for: Meeting.self) { meeting in
+            MeetingDetailView(meeting: meeting)
+        }
+    }
+
+    // MARK: - Segment Picker
+
+    private var segmentPicker: some View {
+        Picker("Meetings", selection: $selectedSegment) {
+            ForEach(MeetingSegment.allCases) { segment in
+                Text(segment.label).tag(segment)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    // MARK: - Meeting List
+
+    @ViewBuilder
+    private var meetingList: some View {
+        let meetings = selectedSegment == .upcoming ? vm.upcomingMeetings : vm.pastMeetings
+
+        if vm.isLoading {
+            Spacer()
+            ProgressView()
+                .tint(.accent)
+            Spacer()
+        } else if meetings.isEmpty {
+            emptyState
+        } else {
+            ScrollView {
+                LazyVStack(spacing: Spacing.md) {
+                    ForEach(meetings) { meeting in
+                        NavigationLink(value: meeting) {
+                            MeetingCard(meeting: meeting)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.vertical, Spacing.md)
+            }
+            .scrollIndicators(.hidden)
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        ContentUnavailableView(
+            selectedSegment == .upcoming ? "No Upcoming Meetings" : "No Past Meetings",
+            systemImage: "calendar",
+            description: Text(
+                selectedSegment == .upcoming
+                ? "Meetings from your clubs will appear here."
+                : "Past meetings will appear here once they've taken place."
+            )
+        )
     }
 }
 
+// MARK: - Segment
+
+enum MeetingSegment: String, CaseIterable, Identifiable {
+    case upcoming, past
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .upcoming: "Upcoming"
+        case .past:     "Past"
+        }
+    }
+}
+
+// MARK: - Preview
+
 #Preview {
-    MeetingsView()
+    NavigationStack {
+        MeetingsView()
+    }
 }

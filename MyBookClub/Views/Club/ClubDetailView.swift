@@ -68,18 +68,13 @@ struct ClubDetailView: View {
         }
         .animation(Animations.standard, value: vm.isLoading)
         .task {
-            // Single parallel load — isLoading stays true until all done.
             async let clubLoad: Void = {
                 if let fresh = await vm.reloadClub(clubId: club.id) {
-                    currentClub = fresh
+                    await MainActor.run { currentClub = fresh }
                 }
             }()
             async let dataLoad: Void = vm.loadAll(clubId: club.id)
             _ = await (clubLoad, dataLoad)
-
-            if vm.isOrganiser && vm.isAtCapacity(club: currentClub) {
-                vm.showCapacityReachedAlert = true
-            }
         }
         .toolbar {
             if vm.isOrganiser {
