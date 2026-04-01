@@ -66,6 +66,19 @@ final class SupabaseService {
             .eq("id", value: uid.uuidString)
             .execute()
     }
+    
+    func deleteCurrentUser() async throws {
+           guard let uid = currentUserID else { throw AppError("Not signed in") }
+    
+           try await client
+               .from("users")
+               .delete()
+               .eq("id", value: uid.uuidString)
+               .execute()
+    
+           // Invalidate the Supabase auth session
+           try await client.auth.signOut()
+       }
 
     // MARK: - Club Discovery
 
@@ -810,6 +823,20 @@ final class SupabaseService {
             .single()
             .execute()
             .value
+    }
+
+    func fetchBooksReadCount() async throws -> Int {
+        guard currentUserID != nil else { return 0 }
+        let myClubs = try await fetchMyClubs()
+        guard !myClubs.isEmpty else { return 0 }
+        let clubIds = myClubs.map(\.id.uuidString)
+        let count: Int = try await client
+            .from("club_book_history")
+            .select("book_id", count: .exact)
+            .in("club_id", values: clubIds)
+            .execute()
+            .count ?? 0
+        return count
     }
 
     // MARK: - Book History

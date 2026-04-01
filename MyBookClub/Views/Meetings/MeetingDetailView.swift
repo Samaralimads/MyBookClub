@@ -15,10 +15,9 @@ struct MeetingDetailView: View {
     @State private var rsvpMembers: [RSVPMember] = []
     @State private var calendarAlertType: CalendarAlertType? = nil
     @State private var showRSVPList = false
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             Color.background.ignoresSafeArea()
 
             ScrollView {
@@ -28,10 +27,8 @@ struct MeetingDetailView: View {
                 }
             }
             .scrollIndicators(.hidden)
-
-            backButton
         }
-        .navigationBarHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
         .task { await loadRSVP() }
         .alert(item: $calendarAlertType) { type in
             switch type {
@@ -65,40 +62,31 @@ struct MeetingDetailView: View {
         }
     }
 
-    // MARK: - Hero: portrait book cover centered on background
+    // MARK: - Hero: book cover
 
     private var heroSection: some View {
-        ZStack {
-            // Subtle gradient behind the cover so it lifts off the background
-            RadialGradient(
-                colors: [Color.accent.opacity(0.15), Color.background],
-                center: .center,
-                startRadius: 40,
-                endRadius: 160
-            )
-            .frame(height: 300)
-
+        HStack {
+            Spacer()
             AsyncImage(url: meeting.bookCoverURL.flatMap { URL(string: $0) }) { image in
                 image
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 140, height: 210)
+                    .frame(width: 140, height: 200)
                     .clipShape(.rect(cornerRadius: 8))
-                    .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 8)
+                    .shadow(color: .black.opacity(0.4), radius: 16, x: 0, y: 6)
             } placeholder: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.accentSubtle)
-                        .frame(width: 140, height: 210)
-                    Image(systemName: "book.closed.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.accent)
-                }
-                .shadow(color: .black.opacity(0.3), radius: 16, x: 0, y: 6)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentSubtle)
+                    .frame(width: 140, height: 200)
+                    .overlay {
+                        Image(systemName: "book.closed.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.accent)
+                    }
+                    .shadow(color: .black.opacity(0.3), radius: 16, x: 0, y: 6)
             }
+            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 60) // room for back button
         .padding(.bottom, Spacing.xl)
     }
 
@@ -253,25 +241,6 @@ struct MeetingDetailView: View {
                     .background(Color.accentSubtle)
                     .clipShape(.rect(cornerRadius: CornerRadius.button))
             }
-        }
-    }
-
-    // MARK: - Back button
-
-    private var backButton: some View {
-        HStack {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.inkPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(Color.cardBackground)
-                    .clipShape(.circle)
-                    .overlay { Circle().stroke(Color.border, lineWidth: 1) }
-            }
-            .padding(.leading, Spacing.lg)
-            .padding(.top, 56)
-            Spacer()
         }
     }
 
@@ -456,26 +425,28 @@ private struct RSVPMenuButton: View {
 // MARK: - Preview
 
 #Preview {
-    MeetingDetailView(
-        meeting: Meeting(
-            id: UUID(),
-            clubId: UUID(),
-            title: "Dune – Chapters 1–12",
-            scheduledAt: Calendar.current.date(byAdding: .day, value: 3, to: .now)!,
-            fromChapter: 1,
-            toChapter: 12,
-            chapterTitles: nil,
-            notes: nil,
-            address: "Virtual – Zoom",
-            isFinal: false,
-            notifSent24h: false,
-            notifSent1h: false,
-            createdAt: .now,
-            clubName: "Sci-Fi & Coffee",
-            clubCoverImageURL: nil,
-            bookTitle: "Dune",
-            bookAuthor: "Frank Herbert",
-            bookCoverURL: nil
+    NavigationStack {
+        MeetingDetailView(
+            meeting: Meeting(
+                id: UUID(),
+                clubId: UUID(),
+                title: "Dune – Chapters 1–12",
+                scheduledAt: Calendar.current.date(byAdding: .day, value: 3, to: .now)!,
+                fromChapter: 1,
+                toChapter: 12,
+                chapterTitles: nil,
+                notes: nil,
+                address: "Virtual – Zoom",
+                isFinal: false,
+                notifSent24h: false,
+                notifSent1h: false,
+                createdAt: .now,
+                clubName: "Sci-Fi & Coffee",
+                clubCoverImageURL: nil,
+                bookTitle: "Dune",
+                bookAuthor: "Frank Herbert",
+                bookCoverURL: nil
+            )
         )
-    )
+    }
 }

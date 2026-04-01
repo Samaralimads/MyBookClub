@@ -9,7 +9,8 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .discover
-
+    @Environment(\.scenePhase) private var scenePhase
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Discover", systemImage: "map.fill", value: AppTab.discover) {
@@ -17,19 +18,19 @@ struct MainTabView: View {
                     DiscoverView()
                 }
             }
-
+            
             Tab("My Clubs", systemImage: "books.vertical.fill", value: AppTab.myClubs) {
                 NavigationStack {
                     MyClubsView()
                 }
             }
-
+            
             Tab("Meetings", systemImage: "calendar", value: AppTab.meetings) {
                 NavigationStack {
                     MeetingsView()
                 }
             }
-
+            
             Tab("Profile", systemImage: "person.fill", value: AppTab.profile) {
                 NavigationStack {
                     ProfileView()
@@ -39,6 +40,11 @@ struct MainTabView: View {
         .tint(.accent)
         .toolbarBackground(Color.cardBackground, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                selectedTab = .discover
+            }
+        }
     }
 }
 
