@@ -57,20 +57,11 @@ struct MyClubsView: View {
     // MARK: - Empty State
     
     private var emptyState: some View {
-        VStack(spacing: Spacing.lg) {
-            Image(systemName: "books.vertical.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(.accent)
-            Text("No clubs yet")
-                .font(.appTitle)
-                .foregroundStyle(.inkPrimary)
-            Text("Click on the + button to create your first club or join one from Discover.")
-                .font(.appBody)
-                .foregroundStyle(.inkSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Spacing.xxl)
-            
-        }
+        EmptyStateView(
+            icon: "books.vertical.fill",
+            title: "No clubs yet",
+            description: "Tap + to create your first club, or join one from Discover."
+        )
     }
     
     // MARK: - Club List

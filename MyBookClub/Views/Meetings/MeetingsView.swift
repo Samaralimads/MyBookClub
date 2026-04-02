@@ -77,14 +77,12 @@ struct MeetingsView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        ContentUnavailableView(
-            selectedSegment == .upcoming ? "No Upcoming Meetings" : "No Past Meetings",
-            systemImage: "calendar",
-            description: Text(
-                selectedSegment == .upcoming
+        EmptyStateView(
+            icon: "calendar",
+            title: selectedSegment == .upcoming ? "No Upcoming Meetings" : "No Past Meetings",
+            description: selectedSegment == .upcoming
                 ? "Meetings from your clubs will appear here."
                 : "Past meetings will appear here once they've taken place."
-            )
         )
     }
 }

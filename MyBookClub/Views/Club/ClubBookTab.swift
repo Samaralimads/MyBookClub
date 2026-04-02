@@ -116,20 +116,11 @@ struct ClubBookTab: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: Spacing.md) {
-            Image(systemName: "book.closed")
-                .font(.system(size: 36))
-                .foregroundStyle(.inkTertiary)
-            Text("No book selected yet")
-                .font(.appBody)
-                .foregroundStyle(.inkSecondary)
-            Text("Head to the Vote tab to suggest and vote for your club's next read.")
-                .font(.appCaption)
-                .foregroundStyle(.inkTertiary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.xxl)
+        EmptyStateView(
+            icon: "book.closed",
+            title: "No book selected yet",
+            description: "Head to the Vote tab to suggest and vote for your club's next read."
+        )
     }
 }
 

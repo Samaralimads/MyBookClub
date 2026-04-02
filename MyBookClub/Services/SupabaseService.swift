@@ -765,12 +765,14 @@ final class SupabaseService {
             let books: Book
             let voteCount: Int
             let hasVoted: Bool
+            let suggestedByName: String?
 
             enum CodingKeys: String, CodingKey {
                 case id
                 case books
-                case voteCount = "vote_count"
-                case hasVoted  = "has_voted"
+                case voteCount       = "vote_count"
+                case hasVoted        = "has_voted"
+                case suggestedByName = "suggested_by_name"
             }
         }
 
@@ -787,7 +789,8 @@ final class SupabaseService {
                 id: $0.id,
                 book: $0.books,
                 voteCount: $0.voteCount,
-                hasVoted: $0.hasVoted
+                hasVoted: $0.hasVoted,
+                suggestedByName: $0.suggestedByName
             )
         }
     }
@@ -850,7 +853,46 @@ final class SupabaseService {
             .execute()
             .value
     }
-
+    
+    // MARK: - Book Rating
+    
+    func fetchBookRating(clubId: UUID, bookId: UUID) async throws -> BookRating {
+         guard let uid = currentUserID else { throw AppError("Not signed in") }
+         let rows: [BookRating] = try await client
+             .rpc("get_book_ratings", params: [
+                 "p_club_id":  AnyJSON.string(clubId.uuidString),
+                 "p_book_id":  AnyJSON.string(bookId.uuidString),
+                 "p_user_id":  AnyJSON.string(uid.uuidString)
+             ])
+             .execute()
+             .value
+         return rows.first ?? BookRating(myRating: nil, avgRating: nil, ratingCount: 0)
+     }
+  
+     func upsertBookRating(clubId: UUID, bookId: UUID, rating: Int) async throws {
+         guard let uid = currentUserID else { throw AppError("Not signed in") }
+  
+         struct RatingUpsert: Encodable {
+             let club_id: String
+             let book_id: String
+             let user_id: String
+             let rating:  Int
+         }
+  
+         try await client
+             .from("book_ratings")
+             .upsert(
+                 RatingUpsert(
+                     club_id: clubId.uuidString,
+                     book_id: bookId.uuidString,
+                     user_id: uid.uuidString,
+                     rating:  rating
+                 ),
+                 onConflict: "club_id,book_id,user_id"
+             )
+             .execute()
+     }
+    
     // MARK: - Reports
 
     func reportPost(postId: UUID, reason: String?) async throws {

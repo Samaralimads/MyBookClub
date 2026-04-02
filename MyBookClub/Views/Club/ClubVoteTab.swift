@@ -12,7 +12,6 @@ struct ClubVoteTab: View {
     let isMember: Bool
     let isOrganiser: Bool
 
-    /// Called with the winning Book after the organiser confirms and the session closes.
     var onWinnerPicked: ((Book) -> Void)?
 
     @State private var vm = ClubVoteViewModel()
@@ -123,11 +122,11 @@ struct ClubVoteTab: View {
                     }
                 }
             } else {
-                Text("No books suggested yet. Be the first!")
-                    .font(.appBody)
-                    .foregroundStyle(.inkSecondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, Spacing.xl)
+                EmptyStateView(
+                    icon: "hand.raised",
+                    title: "No suggestions yet",
+                    description: "Be the first to suggest a book for the vote."
+                )
             }
 
             Button { showBookSearch = true } label: {
@@ -208,22 +207,11 @@ struct ClubVoteTab: View {
     // MARK: - Members only
 
     private var membersOnlyBanner: some View {
-        VStack(spacing: Spacing.md) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.accent)
-            Text("Members Only")
-                .font(.appHeadline)
-                .foregroundStyle(.inkPrimary)
-            Text("Join this club to vote and suggest books.")
-                .font(.appBody)
-                .foregroundStyle(.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Spacing.xl)
-        .background(Color.accentSubtle)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+        EmptyStateView(
+            icon: "lock.fill",
+            title: "Members Only",
+            description: "Join this club to vote and suggest books."
+        )
     }
 }
 
@@ -232,10 +220,10 @@ struct ClubVoteTab: View {
 struct BookSuggestionRow: View {
     let suggestion: BookSuggestion
     let onVote: () -> Void
-
+ 
     var body: some View {
         HStack(spacing: Spacing.lg) {
-
+ 
             AsyncImage(url: suggestion.book.displayCoverURL) { image in
                 image.resizable().scaledToFill()
             } placeholder: {
@@ -248,16 +236,23 @@ struct BookSuggestionRow: View {
             .frame(width: 64, height: 96)
             .clipShape(.rect(cornerRadius: CornerRadius.badge))
             .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-
+ 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(suggestion.book.title)
                     .font(.appBody.weight(.semibold))
                     .foregroundStyle(.inkPrimary)
                     .lineLimit(2)
+ 
                 Text(suggestion.book.author)
                     .font(.appCaption)
                     .foregroundStyle(.inkSecondary)
-
+ 
+                if let name = suggestion.suggestedByName {
+                    Text("Suggested by \(name)")
+                        .font(.appCaption)
+                        .foregroundStyle(.inkTertiary)
+                }
+ 
                 HStack(spacing: Spacing.sm) {
                     Button(action: onVote) {
                         HStack(spacing: Spacing.xs) {
@@ -282,14 +277,14 @@ struct BookSuggestionRow: View {
                         }
                     }
                     .animation(Animations.standard, value: suggestion.hasVoted)
-
+ 
                     Text("^[\(suggestion.voteCount) vote](inflect: true)")
                         .font(.appCaption.weight(.medium))
                         .foregroundStyle(.inkPrimary)
                 }
                 .padding(.top, Spacing.xs)
             }
-
+ 
             Spacer()
         }
         .padding(Spacing.md)
@@ -301,3 +296,4 @@ struct BookSuggestionRow: View {
         }
     }
 }
+ 

@@ -8,15 +8,17 @@
 import Foundation
 
 struct BookSuggestion: Codable, Identifiable {
-    let id: UUID          // vote_session_id + book_id composite used as id
+    let id: UUID
     let book: Book
     var voteCount: Int
-    var hasVoted: Bool    // whether the current user has voted for this
+    var hasVoted: Bool
+    var suggestedByName: String?
 
     enum CodingKeys: String, CodingKey {
         case id
-        case book      = "books"
-        case voteCount = "vote_count"
-        case hasVoted  = "has_voted"
+        case book            = "books"
+        case voteCount       = "vote_count"
+        case hasVoted        = "has_voted"
+        case suggestedByName = "suggested_by_name"
     }
 }
