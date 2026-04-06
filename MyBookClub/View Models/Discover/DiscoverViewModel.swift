@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreLocation
+import Supabase
 
 @Observable
 final class DiscoverViewModel {
@@ -58,10 +59,10 @@ final class DiscoverViewModel {
     }
 
     // MARK: - Role helper
-
+    
     func role(for club: Club) -> MemberRole? {
         guard myClubIds.contains(club.id) else { return nil }
-        return club.organiserId == SupabaseService.shared.currentUserID ? .organiser : .member
+        return club.organiserId == SupabaseService.shared.client.auth.currentUser?.id ? .organiser : .member
     }
 
     // MARK: - Filters

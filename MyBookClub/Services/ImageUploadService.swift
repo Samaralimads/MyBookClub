@@ -45,9 +45,7 @@ final class ImageUploadService {
     }
 
     func uploadAvatar(_ image: UIImage) async throws -> String {
-        guard let uid = SupabaseService.shared.currentUserID else {
-            throw AppError("Not signed in")
-        }
+        let uid = try await SupabaseService.shared.currentUserID
         let path = "\(uid.uuidString)/avatar.jpg"
         return try await uploadImage(image, bucket: .avatars, path: path)
     }

@@ -58,28 +58,25 @@ final class OnboardingViewModel {
         defer { isLoading = false }
         error = nil
 
-        guard let uid = SupabaseService.shared.currentUserID else {
-            error = AppError("Not signed in")
-            return
-        }
-
-        let name = displayName.trimmingCharacters(in: .whitespaces).isEmpty
-            ? "Reader" : displayName.trimmingCharacters(in: .whitespaces)
-
-        let user = AppUser(
-            id: uid,
-            displayName: name,
-            bio: nil,
-            avatarURL: nil,
-            genrePrefs: Array(selectedGenres),
-            currentlyReadingBookId: nil,
-            city: nil,
-            readingFreq: readingFreq,
-            apnsToken: nil,
-            createdAt: Date()
-        )
-
         do {
+            let uid = try await SupabaseService.shared.currentUserID
+
+            let name = displayName.trimmingCharacters(in: .whitespaces).isEmpty
+                ? "Reader" : displayName.trimmingCharacters(in: .whitespaces)
+
+            let user = AppUser(
+                id: uid,
+                displayName: name,
+                bio: nil,
+                avatarURL: nil,
+                genrePrefs: Array(selectedGenres),
+                currentlyReadingBookId: nil,
+                city: nil,
+                readingFreq: readingFreq,
+                apnsToken: nil,
+                createdAt: Date()
+            )
+
             try await SupabaseService.shared.upsertUser(user)
             authViewModel.authState = .authenticated
         } catch {

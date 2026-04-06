@@ -29,8 +29,10 @@ final class SupabaseService {
 
     // MARK: - Auth helpers
 
-    var currentUserID: UUID? {
-        client.auth.currentUser?.id
+    var currentUserID: UUID {
+        get async throws {
+            try await client.auth.session.user.id
+        }
     }
 
     // MARK: - Decoder
@@ -44,7 +46,7 @@ final class SupabaseService {
     // MARK: - User Profile
 
     func fetchCurrentUser() async throws -> AppUser {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         return try await client
             .from("users")
             .select()
@@ -59,26 +61,23 @@ final class SupabaseService {
     }
 
     func updateAPNSToken(_ token: String) async throws {
-        guard let uid = currentUserID else { return }
+        guard let uid = try? await currentUserID else { return }
         try await client
             .from("users")
             .update(["apns_token": token])
             .eq("id", value: uid.uuidString)
             .execute()
     }
-    
+
     func deleteCurrentUser() async throws {
-           guard let uid = currentUserID else { throw AppError("Not signed in") }
-    
-           try await client
-               .from("users")
-               .delete()
-               .eq("id", value: uid.uuidString)
-               .execute()
-    
-           // Invalidate the Supabase auth session
-           try await client.auth.signOut()
-       }
+        let uid = try await currentUserID
+        try await client
+            .from("users")
+            .delete()
+            .eq("id", value: uid.uuidString)
+            .execute()
+        try await client.auth.signOut()
+    }
 
     // MARK: - Club Discovery
 
@@ -128,7 +127,7 @@ final class SupabaseService {
     }
 
     func fetchMyClubs() async throws -> [Club] {
-        guard let uid = currentUserID else { return [] }
+        guard let uid = try? await currentUserID else { return [] }
 
         var clubs: [Club] = try await client
             .from("clubs")
@@ -168,7 +167,7 @@ final class SupabaseService {
     }
 
     func membershipStatus(clubId: UUID) async throws -> MemberStatus? {
-        guard let uid = currentUserID else { return nil }
+        guard let uid = try? await currentUserID else { return nil }
         let rows: [ClubMember] = try await client
             .from("club_members")
             .select()
@@ -180,7 +179,7 @@ final class SupabaseService {
     }
 
     func myRole(clubId: UUID) async throws -> MemberRole? {
-        guard let uid = currentUserID else { return nil }
+        guard let uid = try? await currentUserID else { return nil }
         let rows: [ClubMember] = try await client
             .from("club_members")
             .select()
@@ -192,7 +191,7 @@ final class SupabaseService {
     }
 
     func joinClub(clubId: UUID, isPublic: Bool, memberCap: Int) async throws {
-        guard let uid = currentUserID else { return }
+        let uid = try await currentUserID
 
         if memberCap > 0 {
             let liveCount: Int = try await client
@@ -218,7 +217,7 @@ final class SupabaseService {
     }
 
     func leaveClub(clubId: UUID) async throws {
-        guard let uid = currentUserID else { return }
+        let uid = try await currentUserID
         try await client
             .from("club_members")
             .delete()
@@ -249,7 +248,7 @@ final class SupabaseService {
         memberCap: Int,
         coverImageURL: String?
     ) async throws -> Club {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
 
         let roundedLat = (lat * 100).rounded() / 100
         let roundedLng = (lng * 100).rounded() / 100
@@ -380,7 +379,7 @@ final class SupabaseService {
     }
 
     func fetchUpcomingMeetingsForUser() async throws -> [Meeting] {
-        guard let uid = currentUserID else { return [] }
+        let uid = try await currentUserID
         return try await client
             .rpc("get_user_meetings", params: ["p_user_id": uid.uuidString])
             .execute()
@@ -430,8 +429,7 @@ final class SupabaseService {
             .execute()
             .value
     }
-    
-    
+
     func updateMeeting(
         meetingId: UUID,
         title: String,
@@ -453,18 +451,18 @@ final class SupabaseService {
             let address: String?
             let is_final: Bool
         }
- 
+
         let update = MeetingUpdate(
-            title:          title,
-            scheduled_at:   iso8601.string(from: scheduledAt),
-            from_chapter:   fromChapter,
-            to_chapter:     toChapter,
+            title: title,
+            scheduled_at: iso8601.string(from: scheduledAt),
+            from_chapter: fromChapter,
+            to_chapter: toChapter,
             chapter_titles: chapterTitles,
-            notes:          notes,
-            address:        address,
-            is_final:       isFinal
+            notes: notes,
+            address: address,
+            is_final: isFinal
         )
- 
+
         return try await client
             .from("meetings")
             .update(update)
@@ -474,10 +472,9 @@ final class SupabaseService {
             .execute()
             .value
     }
-    
-    
+
     // MARK: - Meeting RSVPs
- 
+
     func fetchMyRSVP(meetingId: UUID) async throws -> MeetingRSVP? {
         let rows: [MeetingRSVP] = try await client
             .rpc("get_my_rsvp", params: ["p_meeting_id": AnyJSON.string(meetingId.uuidString)])
@@ -485,26 +482,25 @@ final class SupabaseService {
             .value
         return rows.first
     }
- 
 
     @discardableResult
     func upsertRSVP(meetingId: UUID, clubId: UUID, status: RSVPStatus) async throws -> MeetingRSVP {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
- 
+        let uid = try await currentUserID
+
         struct RSVPUpsert: Encodable {
             let meeting_id: String
             let club_id: String
             let user_id: String
             let status: String
         }
- 
+
         let payload = RSVPUpsert(
             meeting_id: meetingId.uuidString,
-            club_id:    clubId.uuidString,
-            user_id:    uid.uuidString,
-            status:     status.rawValue
+            club_id: clubId.uuidString,
+            user_id: uid.uuidString,
+            status: status.rawValue
         )
- 
+
         return try await client
             .from("meeting_rsvps")
             .upsert(payload, onConflict: "meeting_id,user_id")
@@ -513,24 +509,24 @@ final class SupabaseService {
             .execute()
             .value
     }
- 
+
     func deleteRSVP(meetingId: UUID) async throws {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         try await client
             .from("meeting_rsvps")
             .delete()
             .eq("meeting_id", value: meetingId.uuidString)
-            .eq("user_id",    value: uid.uuidString)
+            .eq("user_id", value: uid.uuidString)
             .execute()
     }
- 
+
     func fetchRSVPMembers(meetingId: UUID) async throws -> [RSVPMember] {
         try await client
             .rpc("get_meeting_rsvps", params: ["p_meeting_id": AnyJSON.string(meetingId.uuidString)])
             .execute()
             .value
     }
- 
+
     func fetchRSVPCounts(meetingId: UUID) async throws -> RSVPCounts {
         let rows: [RSVPCounts] = try await client
             .from("meeting_rsvp_counts")
@@ -538,11 +534,8 @@ final class SupabaseService {
             .eq("meeting_id", value: meetingId.uuidString)
             .execute()
             .value
-        // If there are no RSVPs yet the view returns no row — default to zeros.
         return rows.first ?? RSVPCounts(goingCount: 0, notGoingCount: 0)
     }
- 
-
 
     // MARK: - Book archive
 
@@ -587,7 +580,7 @@ final class SupabaseService {
     // MARK: - Reading Progress
 
     func fetchReadingProgress(clubId: UUID, bookId: UUID) async throws -> ReadingProgress? {
-        guard let uid = currentUserID else { return nil }
+        guard let uid = try? await currentUserID else { return nil }
         let rows: [ReadingProgress] = try await client
             .from("reading_progress")
             .select()
@@ -600,7 +593,7 @@ final class SupabaseService {
     }
 
     func upsertReadingProgress(clubId: UUID, bookId: UUID, completedChapters: [Int]) async throws {
-        guard let uid = currentUserID else { return }
+        let uid = try await currentUserID
         struct ProgressUpsert: Encodable {
             let club_id: String
             let user_id: String
@@ -648,7 +641,7 @@ final class SupabaseService {
         parentPostId: UUID?,
         isSpoiler: Bool
     ) async throws -> Post {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         struct PostInsert: Encodable {
             let club_id: String
             let user_id: String
@@ -729,12 +722,12 @@ final class SupabaseService {
     }
 
     func castVote(voteSessionId: UUID, bookId: UUID, clubId: UUID) async throws {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         try await client.from("votes").insert([
             "vote_session_id": voteSessionId.uuidString,
-            "club_id":         clubId.uuidString,
-            "book_id":         bookId.uuidString,
-            "user_id":         uid.uuidString,
+            "club_id": clubId.uuidString,
+            "book_id": bookId.uuidString,
+            "user_id": uid.uuidString,
         ]).execute()
     }
 
@@ -758,7 +751,7 @@ final class SupabaseService {
     // MARK: - Vote Suggestions
 
     func fetchSuggestions(sessionId: UUID) async throws -> [BookSuggestion] {
-        guard let uid = currentUserID else { return [] }
+        let uid = try await currentUserID
 
         struct SuggestionRow: Decodable {
             let id: UUID
@@ -779,7 +772,7 @@ final class SupabaseService {
         let rows: [SuggestionRow] = try await client
             .rpc("get_vote_suggestions", params: [
                 "p_session_id": AnyJSON.string(sessionId.uuidString),
-                "p_user_id":    AnyJSON.string(uid.uuidString)
+                "p_user_id": AnyJSON.string(uid.uuidString)
             ])
             .execute()
             .value
@@ -796,23 +789,23 @@ final class SupabaseService {
     }
 
     func suggestBook(voteSessionId: UUID, bookId: UUID, clubId: UUID) async throws {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         try await client.from("vote_suggestions").insert([
             "vote_session_id": voteSessionId.uuidString,
-            "book_id":         bookId.uuidString,
-            "club_id":         clubId.uuidString,
-            "suggested_by":    uid.uuidString,
+            "book_id": bookId.uuidString,
+            "club_id": clubId.uuidString,
+            "suggested_by": uid.uuidString,
         ]).execute()
     }
 
     func removeVote(voteSessionId: UUID, bookId: UUID) async throws {
-        guard let uid = currentUserID else { return }
+        let uid = try await currentUserID
         try await client
             .from("votes")
             .delete()
             .eq("vote_session_id", value: voteSessionId.uuidString)
-            .eq("book_id",         value: bookId.uuidString)
-            .eq("user_id",         value: uid.uuidString)
+            .eq("book_id", value: bookId.uuidString)
+            .eq("user_id", value: uid.uuidString)
             .execute()
     }
 
@@ -829,7 +822,7 @@ final class SupabaseService {
     }
 
     func fetchBooksReadCount() async throws -> Int {
-        guard currentUserID != nil else { return 0 }
+        guard (try? await currentUserID) != nil else { return 0 }
         let myClubs = try await fetchMyClubs()
         guard !myClubs.isEmpty else { return 0 }
         let clubIds = myClubs.map(\.id.uuidString)
@@ -853,54 +846,54 @@ final class SupabaseService {
             .execute()
             .value
     }
-    
+
     // MARK: - Book Rating
-    
+
     func fetchBookRating(clubId: UUID, bookId: UUID) async throws -> BookRating {
-         guard let uid = currentUserID else { throw AppError("Not signed in") }
-         let rows: [BookRating] = try await client
-             .rpc("get_book_ratings", params: [
-                 "p_club_id":  AnyJSON.string(clubId.uuidString),
-                 "p_book_id":  AnyJSON.string(bookId.uuidString),
-                 "p_user_id":  AnyJSON.string(uid.uuidString)
-             ])
-             .execute()
-             .value
-         return rows.first ?? BookRating(myRating: nil, avgRating: nil, ratingCount: 0)
-     }
-  
-     func upsertBookRating(clubId: UUID, bookId: UUID, rating: Int) async throws {
-         guard let uid = currentUserID else { throw AppError("Not signed in") }
-  
-         struct RatingUpsert: Encodable {
-             let club_id: String
-             let book_id: String
-             let user_id: String
-             let rating:  Int
-         }
-  
-         try await client
-             .from("book_ratings")
-             .upsert(
-                 RatingUpsert(
-                     club_id: clubId.uuidString,
-                     book_id: bookId.uuidString,
-                     user_id: uid.uuidString,
-                     rating:  rating
-                 ),
-                 onConflict: "club_id,book_id,user_id"
-             )
-             .execute()
-     }
-    
+        let uid = try await currentUserID
+        let rows: [BookRating] = try await client
+            .rpc("get_book_ratings", params: [
+                "p_club_id": AnyJSON.string(clubId.uuidString),
+                "p_book_id": AnyJSON.string(bookId.uuidString),
+                "p_user_id": AnyJSON.string(uid.uuidString)
+            ])
+            .execute()
+            .value
+        return rows.first ?? BookRating(myRating: nil, avgRating: nil, ratingCount: 0)
+    }
+
+    func upsertBookRating(clubId: UUID, bookId: UUID, rating: Double) async throws {
+        let uid = try await currentUserID
+
+        struct RatingUpsert: Encodable {
+            let club_id: String
+            let book_id: String
+            let user_id: String
+            let rating: Double
+        }
+
+        try await client
+            .from("book_ratings")
+            .upsert(
+                RatingUpsert(
+                    club_id: clubId.uuidString,
+                    book_id: bookId.uuidString,
+                    user_id: uid.uuidString,
+                    rating: rating
+                ),
+                onConflict: "club_id,book_id,user_id"
+            )
+            .execute()
+    }
+
     // MARK: - Reports
 
     func reportPost(postId: UUID, reason: String?) async throws {
-        guard let uid = currentUserID else { throw AppError("Not signed in") }
+        let uid = try await currentUserID
         try await client.from("reports").insert([
-            "post_id":     postId.uuidString,
+            "post_id": postId.uuidString,
             "reporter_id": uid.uuidString,
-            "reason":      reason ?? "",
+            "reason": reason ?? "",
         ]).execute()
     }
 }

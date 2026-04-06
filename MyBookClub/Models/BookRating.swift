@@ -8,10 +8,10 @@
 import Foundation
 
 struct BookRating: Decodable {
-    let myRating: Int?
+    let myRating: Double?
     let avgRating: Double?
     let ratingCount: Int
-
+ 
     enum CodingKeys: String, CodingKey {
         case myRating    = "my_rating"
         case avgRating   = "avg_rating"
