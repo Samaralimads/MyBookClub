@@ -79,7 +79,6 @@ struct DiscoverView: View {
                 .padding(.top, Spacing.lg)
                 .padding(.bottom, Spacing.xxl)
             }
-            .scrollIndicators(.hidden)
         }
     }
 }

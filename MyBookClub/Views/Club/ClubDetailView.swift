@@ -44,6 +44,7 @@ struct ClubDetailView: View {
                     }
                 }
             }
+            .scrollIndicators(.hidden)
             .background(Color.background)
             .ignoresSafeArea(edges: .top)
             
@@ -351,7 +352,8 @@ struct ClubDetailView: View {
         case .board:
             ClubBoardTab(
                 club: currentClub,
-                isOrganiser: vm.isOrganiser
+                isOrganiser: vm.isOrganiser,
+                isMember: vm.isMember
             )
 
         case .vote:

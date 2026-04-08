@@ -24,7 +24,12 @@ struct ClubVoteTab: View {
             if !isMember {
                 membersOnlyBanner
             } else if hasCurrentBook {
-                currentlyReadingBanner
+                
+                EmptyStateView(
+                    icon: "book",
+                    title: "Currently Reading",
+                    description: "Voting for the next book opens once you've finished your current read.")
+                
             } else if vm.isLoading {
                 ProgressView()
                     .tint(.accent)
@@ -67,28 +72,7 @@ struct ClubVoteTab: View {
             Text("This will close voting and set the winning book as your club's current read. This cannot be undone.")
         }
     }
-
-    // MARK: - Currently reading banner
-
-    private var currentlyReadingBanner: some View {
-        VStack(spacing: Spacing.md) {
-            Image(systemName: "book.fill")
-                .font(.system(size: 32))
-                .foregroundStyle(.accent)
-            Text("Currently Reading")
-                .font(.appHeadline)
-                .foregroundStyle(.inkPrimary)
-            Text("Voting for the next book opens once you've finished your current read.")
-                .font(.appBody)
-                .foregroundStyle(.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Spacing.xl)
-        .background(Color.accentSubtle)
-        .clipShape(.rect(cornerRadius: CornerRadius.card))
-    }
-
+    
     // MARK: - Active session
 
     private func activeVoteSection(session: VoteSession) -> some View {

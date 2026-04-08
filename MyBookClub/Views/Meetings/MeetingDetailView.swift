@@ -349,20 +349,12 @@ private struct RSVPGroupColumn: View {
             }
             HStack(spacing: -8) {
                 ForEach(members.prefix(maxShown)) { member in
-                    AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        Circle()
-                            .fill(Color.purpleTint)
-                            .overlay {
-                                Image(systemName: "person.fill")
-                                    .foregroundStyle(.accent)
-                                    .font(.system(size: 14))
-                            }
-                    }
-                    .frame(width: avatarSize, height: avatarSize)
-                    .clipShape(.circle)
-                    .overlay { Circle().stroke(Color.cardBackground, lineWidth: 2) }
+                    AvatarView(
+                        urlString: member.avatarURL,
+                        size: avatarSize,
+                        strokeColor: .cardBackground,
+                        strokeWidth: 2
+                    )
                 }
             }
         }

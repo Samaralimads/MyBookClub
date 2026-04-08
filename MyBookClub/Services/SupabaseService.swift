@@ -613,21 +613,39 @@ final class SupabaseService {
 
     // MARK: - Posts (Board)
 
-    func fetchPosts(clubId: UUID) async throws -> [Post] {
+    func fetchBoardPosts(clubId: UUID) async throws -> [Post] {
         try await client
             .from("posts")
-            .select("*, users(id, display_name, avatar_url)")
+            .select("id, club_id, user_id, post_type, parent_post_id, content, is_spoiler, is_pinned, created_at, users:user_id(*)")
             .eq("club_id", value: clubId.uuidString)
             .is("parent_post_id", value: nil)
+            .order("is_pinned", ascending: false)
             .order("created_at", ascending: false)
             .execute()
             .value
     }
 
+    func fetchLikeCount(postId: UUID) async throws -> Int {
+        try await client
+            .from("post_likes")
+            .select("*", count: .exact)
+            .eq("post_id", value: postId.uuidString)
+            .execute()
+            .count ?? 0
+    }
+
+    func pinPost(postId: UUID, pinned: Bool) async throws {
+        try await client
+            .from("posts")
+            .update(["is_pinned": pinned])
+            .eq("id", value: postId.uuidString)
+            .execute()
+    }
+
     func fetchComments(parentPostId: UUID) async throws -> [Post] {
         try await client
             .from("posts")
-            .select("*, users(id, display_name, avatar_url)")
+            .select("id, club_id, user_id, post_type, parent_post_id, content, is_spoiler, is_pinned, created_at, users:user_id(*)")
             .eq("parent_post_id", value: parentPostId.uuidString)
             .order("created_at", ascending: true)
             .execute()
@@ -640,7 +658,7 @@ final class SupabaseService {
         postType: PostType,
         parentPostId: UUID?,
         isSpoiler: Bool
-    ) async throws -> Post {
+    ) async throws {
         let uid = try await currentUserID
         struct PostInsert: Encodable {
             let club_id: String
@@ -658,34 +676,61 @@ final class SupabaseService {
             content: content,
             is_spoiler: isSpoiler
         )
-        return try await client
+        try await client
             .from("posts")
             .insert(insert)
-            .select("*, users(id, display_name, avatar_url)")
-            .single()
             .execute()
-            .value
     }
 
     func deletePost(id: UUID) async throws {
         try await client.from("posts").delete().eq("id", value: id.uuidString).execute()
     }
 
-    func addReaction(postId: UUID, emoji: String) async throws {
-        let post: Post = try await client
-            .from("posts")
-            .select("reactions")
-            .eq("id", value: postId.uuidString)
-            .single()
+    func fetchLikes(postId: UUID) async throws -> [PostLike] {
+        try await client
+            .from("post_likes")
+            .select()
+            .eq("post_id", value: postId.uuidString)
             .execute()
             .value
-        var reactions = post.reactions
-        reactions[emoji, default: 0] += 1
+    }
+
+    func likePost(postId: UUID) async throws {
+        let uid = try await currentUserID
+        struct LikeInsert: Encodable {
+            let post_id: String
+            let user_id: String
+        }
         try await client
-            .from("posts")
-            .update(["reactions": reactions])
-            .eq("id", value: postId.uuidString)
+            .from("post_likes")
+            .upsert(LikeInsert(post_id: postId.uuidString, user_id: uid.uuidString),
+                    onConflict: "post_id,user_id")
             .execute()
+    }
+
+    func unlikePost(postId: UUID) async throws {
+        let uid = try await currentUserID
+        try await client
+            .from("post_likes")
+            .delete()
+            .eq("post_id", value: postId.uuidString)
+            .eq("user_id", value: uid.uuidString)
+            .execute()
+    }
+
+    func fetchMyLikedPostIds() async throws -> Set<UUID> {
+        let uid = try await currentUserID
+        struct LikeRow: Decodable {
+            let postId: UUID
+            enum CodingKeys: String, CodingKey { case postId = "post_id" }
+        }
+        let rows: [LikeRow] = try await client
+            .from("post_likes")
+            .select("post_id")
+            .eq("user_id", value: uid.uuidString)
+            .execute()
+            .value
+        return Set(rows.map(\.postId))
     }
 
     // MARK: - Voting

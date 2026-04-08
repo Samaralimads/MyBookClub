@@ -15,7 +15,7 @@ struct Post: Codable, Identifiable {
     var parentPostId: UUID?
     var content: String
     var isSpoiler: Bool
-    var reactions: [String: Int]
+    var isPinned: Bool?
     let createdAt: Date
 
     // Joined
@@ -24,15 +24,15 @@ struct Post: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id
-        case clubId        = "club_id"
-        case userId        = "user_id"
-        case postType      = "post_type"
-        case parentPostId  = "parent_post_id"
+        case clubId       = "club_id"
+        case userId       = "user_id"
+        case postType     = "post_type"
+        case parentPostId = "parent_post_id"
         case content
-        case isSpoiler     = "is_spoiler"
-        case reactions
-        case createdAt     = "created_at"
-        case author        = "users"
+        case isSpoiler    = "is_spoiler"
+        case isPinned     = "is_pinned"
+        case createdAt    = "created_at"
+        case author       = "users"
         case comments
     }
 }

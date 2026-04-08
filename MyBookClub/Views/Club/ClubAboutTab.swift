@@ -142,30 +142,11 @@ struct MemberAvatarStack: View {
 
     @ViewBuilder
     private func avatarView(for index: Int) -> some View {
-        Group {
-            if let avatarURL = members.indices.contains(index) ? members[index].avatarURL : nil,
-               let url = URL(string: avatarURL) {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    placeholder
-                }
-            } else {
-                placeholder
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(.circle)
-        .overlay { Circle().stroke(Color.background, lineWidth: 2) }
-    }
-
-    private var placeholder: some View {
-        Circle()
-            .fill(Color.purpleTint)
-            .overlay {
-                Image(systemName: "person.fill")
-                    .foregroundStyle(.accent)
-                    .font(.system(size: 16))
-            }
+        AvatarView(
+            urlString: members.indices.contains(index) ? members[index].avatarURL : nil,
+            size: size,
+            strokeColor: .background,
+            strokeWidth: 2
+        )
     }
 }

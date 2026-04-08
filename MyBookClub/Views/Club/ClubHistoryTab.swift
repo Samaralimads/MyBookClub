@@ -39,14 +39,9 @@ struct ClubHistoryTab: View {
     // MARK: - Carousel
     
     private var carousel: some View {
-        VStack(spacing: Spacing.xl) {
-            Text("Past Books")
-                .font(.appHeadline)
-                .foregroundStyle(.inkPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.lg)
+        VStack(spacing: Spacing.lg) {
             
-            fanStack
+            bookHistoryStack
             
             bookInfo
                 .padding(.horizontal, Spacing.lg)
@@ -72,19 +67,20 @@ struct ClubHistoryTab: View {
                 .id(currentIndex)
             }
         }
+        .padding(.top, -Spacing.lg)
     }
     
-    // MARK: - Fan stack
+    // MARK: - Book stack
     
-    private var fanStack: some View {
+    private var bookHistoryStack: some View {
         Color.clear
             .frame(maxWidth: .infinity)
-            .frame(height: 210)
+            .frame(height: 250)
             .overlay {
                 ZStack {
                     ForEach(cardIndices, id: \.self) { index in
                         let offset = index - currentIndex
-                        FanCard(
+                        BookHistoryCard(
                             entry: vm.entries[index],
                             stackOffset: offset,
                             dragOffset: offset == 0 ? dragOffset : 0
@@ -127,14 +123,14 @@ struct ClubHistoryTab: View {
             if currentIndex < vm.entries.count {
                 let entry = vm.entries[currentIndex]
                 VStack(spacing: Spacing.xs) {
-                    Text(entry.book.author)
-                        .font(.appBody)
-                        .foregroundStyle(.inkSecondary)
                     Text(entry.book.title.uppercased())
-                        .font(.appTitle)
+                        .font(.appHeadline)
                         .foregroundStyle(.inkPrimary)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
+                    Text(entry.book.author)
+                        .font(.appBody)
+                        .foregroundStyle(.inkSecondary)
                     Text("Finished \(entry.finishedAt, format: .dateTime.month(.wide).year())")
                         .font(.appCaption)
                         .foregroundStyle(.inkTertiary)
@@ -163,13 +159,13 @@ struct ClubHistoryTab: View {
 
 // MARK: - Fan Card
 
-private struct FanCard: View {
+private struct BookHistoryCard: View {
     let entry: ClubBookHistory
     let stackOffset: Int
     let dragOffset: CGFloat
     
-    private let cardWidth: CGFloat = 120
-    private let cardHeight: CGFloat = 170
+    private let cardWidth: CGFloat = 145
+    private let cardHeight: CGFloat = 210
     
     var body: some View {
         AsyncImage(url: entry.book.displayCoverURL) { image in
@@ -178,7 +174,7 @@ private struct FanCard: View {
             Color.purpleTint
                 .overlay {
                     Image(systemName: "book.closed.fill")
-                        .font(.system(size: 32))
+                        .font(.system(size: 36))
                         .foregroundStyle(.accent)
                 }
         }
@@ -200,13 +196,13 @@ private struct FanCard: View {
     private var xOffset: CGFloat {
         switch stackOffset {
         case 0:  return dragOffset * 0.35
-        case -1: return -90
-        case  1: return  90
-        default: return CGFloat(stackOffset) * 90
+        case -1: return -100
+        case  1: return  100
+        default: return CGFloat(stackOffset) * 100
         }
     }
     
-    private var yOffset: CGFloat { stackOffset == 0 ? 0 : 18 }
+    private var yOffset: CGFloat { stackOffset == 0 ? 0 : 20 }
     
     private var rotation: Double {
         switch stackOffset {
@@ -260,12 +256,12 @@ struct HistoryRatingCards: View {
     @ViewBuilder
     private func ratingLabel(_ value: Double?) -> some View {
         if let value {
-            Text(value, format: .number.precision(.fractionLength(1)).locale(Locale(identifier: "en_US")))
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+            Text(value, format: .number.precision(.fractionLength(1)))
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(.inkPrimary)
         } else {
             Text("—")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(.inkTertiary)
         }
     }

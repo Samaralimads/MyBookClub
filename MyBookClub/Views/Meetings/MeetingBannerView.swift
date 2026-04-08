@@ -283,20 +283,12 @@ private struct RSVPAvatarStack: View {
     var body: some View {
         HStack(spacing: -overlap) {
             ForEach(members.prefix(maxShown)) { member in
-                AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Circle()
-                        .fill(Color.purpleTint)
-                        .overlay {
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.accent)
-                        }
-                }
-                .frame(width: size, height: size)
-                .clipShape(.circle)
-                .overlay { Circle().stroke(Color.cardBackground, lineWidth: 1.5) }
+                AvatarView(
+                    urlString: member.avatarURL,
+                    size: size,
+                    strokeColor: .cardBackground,
+                    strokeWidth: 1.5
+                )
             }
         }
     }
@@ -361,17 +353,7 @@ private struct RSVPMemberRow: View {
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            AsyncImage(url: member.avatarURL.flatMap { URL(string: $0) }) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                Circle()
-                    .fill(Color.purpleTint)
-                    .overlay {
-                        Image(systemName: "person.fill").foregroundStyle(.accent)
-                    }
-            }
-            .frame(width: 40, height: 40)
-            .clipShape(.circle)
+            AvatarView(urlString: member.avatarURL, size: 40)
 
             Text(member.displayName)
                 .font(.appBody)

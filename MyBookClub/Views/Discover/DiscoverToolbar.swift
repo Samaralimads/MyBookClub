@@ -14,13 +14,13 @@ struct DiscoverToolbar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SearchBar(text: $vm.searchText, onSubmit: vm.search, onClear: vm.clearSearch)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.sm)
+            HStack(spacing: Spacing.sm) {
+                SearchBar(text: $vm.searchText, onSubmit: vm.search, onClear: vm.clearSearch)
 
-            ListMapToggle(showMap: $vm.showMap)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
+                ViewToggleButton(showMap: $vm.showMap)
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.sm)
 
             DiscoverFilterChips(vm: vm)
                 .padding(.vertical, Spacing.md)
@@ -65,49 +65,27 @@ struct SearchBar: View {
     }
 }
 
-// MARK: - List Map Toggle
+// MARK: - View Toggle Button
 
-struct ListMapToggle: View {
+struct ViewToggleButton: View {
     @Binding var showMap: Bool
-
+ 
     var body: some View {
-        HStack(spacing: 0) {
-            segment(title: "List", icon: "list.bullet", isSelected: !showMap) {
-                withAnimation(Animations.standard) { showMap = false }
-            }
-            segment(title: "Map", icon: "mappin.and.ellipse", isSelected: showMap) {
-                withAnimation(Animations.standard) { showMap = true }
-            }
-        }
-        .background(Color.border.opacity(0.3))
-        .clipShape(.rect(cornerRadius: CornerRadius.button))
-        .overlay {
-            RoundedRectangle(cornerRadius: CornerRadius.button)
-                .stroke(Color.border, lineWidth: 1)
-        }
-    }
-
-    private func segment(
-        title: String,
-        icon: String,
-        isSelected: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.appBody.weight(.medium))
-                .foregroundStyle(isSelected ? .inkPrimary : .inkTertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background {
-                    if isSelected {
-                        Color.cardBackground
-                            .clipShape(.rect(cornerRadius: CornerRadius.button - 2))
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    }
+        Button {
+            showMap.toggle()
+//            withAnimation(Animations.standard) { showMap.toggle() }
+        } label: {
+            Image(systemName: showMap ? "list.bullet" : "map")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.inkSecondary)
+                .frame(width: 50, height: 50)
+                .background(Color.cardBackground)
+                .clipShape(.rect(cornerRadius: CornerRadius.card))
+                .overlay {
+                    RoundedRectangle(cornerRadius: CornerRadius.card)
+                        .stroke(Color.border, lineWidth: 1)
                 }
         }
-        .padding(4)
     }
 }
 
