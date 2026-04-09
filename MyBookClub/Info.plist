@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSCalendarsUsageDescription</key>
-	<string>MyBookClub adds your upcoming book club meetings to your calendar.</string>
-	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
-	<string>MyBookClub adds your upcoming book club meetings to your calendar.</string>
 	<key>GOOGLE_BOOKS_KEY</key>
 	<string>$(GOOGLE_BOOKS_KEY)</string>
 	<key>SUPABASE_ANON_KEY</key>
@@ -14,5 +10,10 @@
 	<string>https://$(SUPABASE_URL)</string>
 	<key>TELEMETRY_DECK_ID</key>
 	<string>$(TELEMETRY_DECK_ID)</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>PlayfairDisplay-Bold.ttf</string>
+		<string>PlayfairDisplay-SemiBold.ttf</string>
+	</array>
 </dict>
 </plist>

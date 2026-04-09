@@ -353,14 +353,11 @@ struct PlanMeetingSheet: View {
                             .font(.appBody.weight(.semibold))
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(isScheduling || !isFormValid)
         }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, Spacing.md)
-        .background(Color.background)
+        .padding(Spacing.md)
     }
 
     // MARK: - Helpers

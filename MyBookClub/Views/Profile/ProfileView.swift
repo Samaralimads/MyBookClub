@@ -123,7 +123,7 @@ struct ProfileView: View {
             sectionHeader("Favourite Genres")
             FlowLayout(spacing: Spacing.sm) {
                 ForEach(genres, id: \.self) { genre in
-                    Text(genre)
+                    Text(Genre(rawValue: genre)?.label ?? genre)
                         .font(.appCaption)
                         .foregroundStyle(.accent)
                         .padding(.vertical, Spacing.xs + 2)

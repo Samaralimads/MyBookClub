@@ -11,12 +11,15 @@ struct ClubBookTab: View {
     let club: Club
     let isMember: Bool
     let nextMeeting: Meeting?
+    let onArchived: (() -> Void)?
 
     @State private var vm = ClubBookViewModel()
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
-            if let book = club.currentBook {
+            if !isMember {
+                        membersOnlyBanner
+                    } else if let book = club.currentBook {
                 currentBookSection(book: book)
 
                 if let meeting = nextMeeting, let range = meeting.chapterRange {
@@ -29,10 +32,21 @@ struct ClubBookTab: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, Spacing.xxl)
         .task {
-            await vm.load(club: club, isMember: isMember)
+            let archived = await vm.load(club: club, isMember: isMember)
+            if archived { onArchived?() }
         }
     }
 
+    // MARK: - Members only
+    
+    private var membersOnlyBanner: some View {
+        EmptyStateView(
+            icon: "lock.fill",
+            title: "Members Only",
+            description: "Join this club to see the current book and track your reading progress."
+        )
+    }
+    
     // MARK: - Current Book
 
     private func currentBookSection(book: Book) -> some View {

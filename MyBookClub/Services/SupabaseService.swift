@@ -226,15 +226,6 @@ final class SupabaseService {
             .execute()
     }
 
-    func removeMember(clubId: UUID, userId: UUID) async throws {
-        try await client
-            .from("club_members")
-            .delete()
-            .eq("club_id", value: clubId.uuidString)
-            .eq("user_id", value: userId.uuidString)
-            .execute()
-    }
-
     // MARK: - Club Creation
 
     func createClub(
@@ -510,16 +501,6 @@ final class SupabaseService {
             .value
     }
 
-    func deleteRSVP(meetingId: UUID) async throws {
-        let uid = try await currentUserID
-        try await client
-            .from("meeting_rsvps")
-            .delete()
-            .eq("meeting_id", value: meetingId.uuidString)
-            .eq("user_id", value: uid.uuidString)
-            .execute()
-    }
-
     func fetchRSVPMembers(meetingId: UUID) async throws -> [RSVPMember] {
         try await client
             .rpc("get_meeting_rsvps", params: ["p_meeting_id": AnyJSON.string(meetingId.uuidString)])
@@ -684,15 +665,6 @@ final class SupabaseService {
 
     func deletePost(id: UUID) async throws {
         try await client.from("posts").delete().eq("id", value: id.uuidString).execute()
-    }
-
-    func fetchLikes(postId: UUID) async throws -> [PostLike] {
-        try await client
-            .from("post_likes")
-            .select()
-            .eq("post_id", value: postId.uuidString)
-            .execute()
-            .value
     }
 
     func likePost(postId: UUID) async throws {
@@ -929,16 +901,5 @@ final class SupabaseService {
                 onConflict: "club_id,book_id,user_id"
             )
             .execute()
-    }
-
-    // MARK: - Reports
-
-    func reportPost(postId: UUID, reason: String?) async throws {
-        let uid = try await currentUserID
-        try await client.from("reports").insert([
-            "post_id": postId.uuidString,
-            "reporter_id": uid.uuidString,
-            "reason": reason ?? "",
-        ]).execute()
     }
 }

@@ -101,7 +101,14 @@ struct ClubDetailView: View {
             NavigationStack {
                 CreateClubView(
                     club: currentClub,
-                    onClubUpdated: { updated in currentClub = updated },
+                    onClubUpdated: { updated in
+                        var busted = updated
+                        if let url = updated.coverImageURL {
+                            let base = url.components(separatedBy: "?").first ?? url
+                            busted.coverImageURL = "\(base)?t=\(Int(Date().timeIntervalSince1970))"
+                        }
+                        currentClub = busted   // ← triggers AsyncImage to reload
+                    },
                     onClubDeleted: { dismiss() }
                 )
             }
@@ -122,7 +129,7 @@ struct ClubDetailView: View {
     // MARK: - Hero
     
     private var heroHeader: some View {
-        AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }) { image in
+        AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }){ image in
             image.resizable().scaledToFill()
         } placeholder: {
             LinearGradient(
@@ -346,7 +353,14 @@ struct ClubDetailView: View {
             ClubBookTab(
                 club: currentClub,
                 isMember: vm.isMember,
-                nextMeeting: vm.nextMeeting
+                nextMeeting: vm.nextMeeting,
+                onArchived: {
+                    Task { @MainActor in
+                        if let fresh = await vm.reloadClub(clubId: club.id) {
+                            currentClub = fresh
+                        }
+                    }
+                }
             )
 
         case .board:

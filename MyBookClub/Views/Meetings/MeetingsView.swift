@@ -24,6 +24,7 @@ struct MeetingsView: View {
 
                 meetingList
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .navigationTitle("Meetings")
         .navigationBarTitleDisplayMode(.large)

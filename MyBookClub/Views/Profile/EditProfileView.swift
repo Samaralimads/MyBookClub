@@ -215,6 +215,7 @@ struct EditProfileView: View {
                                     .stroke(selected ? Color.accent : Color.border, lineWidth: 1.5)
                             }
                     }
+                    .buttonStyle(.plain) 
                     .animation(Animations.standard, value: selected)
                     .disabled(!selected && vm.selectedGenres.count >= 5)
                 }

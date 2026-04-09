@@ -22,10 +22,10 @@ enum Spacing {
 // MARK: - Typography
 
 extension Font {
-    static let appTitle       = Font.system(size: 30, weight: .bold)
-    static let appHeadline    = Font.system(size: 21, weight: .semibold)
-    static let appBody        = Font.system(size: 18, weight: .regular)
-    static let appCallout     = Font.system(size: 17, weight: .medium)
+    static let appTitle       = Font.custom("PlayfairDisplay-Bold", size: 26)
+//    static let appTitle       = Font.custom("Didot-Bold", size: 30)
+    static let appHeadline    = Font.custom("PlayfairDisplay-SemiBold", size: 20)
+    static let appBody        = Font.system(size: 16, weight: .regular)
     static let appCaption     = Font.system(size: 15, weight: .regular)
     static let appCaptionBold = Font.system(size: 15, weight: .semibold)
 }

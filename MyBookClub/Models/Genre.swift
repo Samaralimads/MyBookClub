@@ -9,10 +9,8 @@ import Foundation
 
 enum Genre: String, CaseIterable, Codable {
     case literaryFiction  = "literary-fiction"
-    case mystery          = "mystery"
-    case thriller         = "thriller"
-    case sciFi            = "sci-fi"
-    case fantasy          = "fantasy"
+    case mysteryThriller  = "mystery-thriller"
+    case sciFiFantasy     = "sci-fi-fantasy"
     case romance          = "romance"
     case historicalFiction = "historical-fiction"
     case nonFiction       = "non-fiction"
@@ -24,10 +22,8 @@ enum Genre: String, CaseIterable, Codable {
     var label: String {
         switch self {
         case .literaryFiction:   return "Literary Fiction"
-        case .mystery:           return "Mystery"
-        case .thriller:          return "Thriller"
-        case .sciFi:             return "Sci-Fi"
-        case .fantasy:           return "Fantasy"
+        case .mysteryThriller:   return "Mystery & Thriller" 
+        case .sciFiFantasy:      return "Sci-Fi & Fantasy"
         case .romance:           return "Romance"
         case .historicalFiction: return "Historical Fiction"
         case .nonFiction:        return "Non-Fiction"

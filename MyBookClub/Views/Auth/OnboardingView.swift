@@ -85,11 +85,7 @@ struct OnboardingView: View {
 
 private struct GenrePickerStep: View {
     @Bindable var vm: OnboardingViewModel
-    private let genres = [
-        "Literary Fiction", "Mystery", "Romance", "Sci-Fi", "Fantasy",
-        "Historical", "Non-Fiction", "Biography", "Thriller", "Self-Help",
-        "Graphic Novel", "Poetry"
-    ]
+
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -99,21 +95,22 @@ private struct GenrePickerStep: View {
                     .font(.appBody).foregroundStyle(.inkSecondary)
             }
             FlowLayout(spacing: Spacing.sm) {
-                ForEach(genres, id: \.self) { genre in
+                ForEach(Genre.allCases, id: \.rawValue) { genre in
                     Button {
-                        vm.toggleGenre(genre)
+                        vm.toggleGenre(genre.rawValue)
                     } label: {
-                        Text(genre)
+                        let selected = vm.selectedGenres.contains(genre.rawValue)
+                        Text(genre.label)                       
                             .font(.appCaption)
-                            .foregroundStyle(vm.selectedGenres.contains(genre) ? .white : .inkPrimary)
+                            .foregroundStyle(selected ? .white : .inkPrimary)
                             .padding(.vertical, Spacing.sm)
                             .padding(.horizontal, Spacing.md)
-                            .background(vm.selectedGenres.contains(genre) ? Color.accentColor : Color.cardBackground)
+                            .background(selected ? Color.accentColor : Color.cardBackground)
                             .overlay(RoundedRectangle(cornerRadius: CornerRadius.button)
-                                .stroke(vm.selectedGenres.contains(genre) ? Color.accentColor : Color.border, lineWidth: 1.5))
+                                .stroke(selected ? Color.accentColor : Color.border, lineWidth: 1.5))
                             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.button))
                     }
-                    .animation(Animations.standard, value: vm.selectedGenres.contains(genre))
+                    .animation(Animations.standard, value: vm.selectedGenres.contains(genre.rawValue))
                 }
             }
         }

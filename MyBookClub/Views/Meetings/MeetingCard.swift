@@ -20,6 +20,8 @@ struct MeetingCard: View {
                         .font(.appCaption.weight(.semibold))
                         .foregroundStyle(.accent)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
                 }
 
                 if let bookTitle = meeting.bookTitle {

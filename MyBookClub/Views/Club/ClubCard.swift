@@ -37,6 +37,8 @@ struct ClubCard: View {
                         .font(.appHeadline)
                         .foregroundStyle(.inkPrimary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
                     Spacer()
                     if let role = userRole {
                         Text(role == .organiser ? "ORGANIZER" : "MEMBER")

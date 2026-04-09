@@ -172,7 +172,8 @@ final class CreateClubViewModel {
             // Upload new cover if the user picked one
             var newCoverURL = existingCoverURL
             if let image = coverImage {
-                newCoverURL = try await ImageUploadService.shared.uploadClubCover(image, clubId: existing.id)
+                let url = try await ImageUploadService.shared.uploadClubCover(image, clubId: existing.id)
+                newCoverURL = url + "?t=\(Int(Date().timeIntervalSince1970))"
             }
             
             let updated = try await SupabaseService.shared.updateClub(
