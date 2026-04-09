@@ -117,12 +117,12 @@ final class SupabaseService {
     
     func fetchClub(id: UUID) async throws -> Club {
         var club: Club = try await client
-            .from("clubs")
-            .select("*, books(*)")
-            .eq("id", value: id.uuidString)
-            .single()
-            .execute()
-            .value
+                .from("clubs")
+                .select("*, books(*), lat:ST_Y(location::geometry), lng:ST_X(location::geometry)")
+                .eq("id", value: id.uuidString)
+                .single()
+                .execute()
+                .value
         
         let count: Int = try await client
             .from("club_members")
