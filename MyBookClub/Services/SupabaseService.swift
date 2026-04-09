@@ -849,17 +849,11 @@ final class SupabaseService {
     }
     
     func fetchBooksReadCount() async throws -> Int {
-        guard (try? await currentUserID) != nil else { return 0 }
-        let myClubs = try await fetchMyClubs()
-        guard !myClubs.isEmpty else { return 0 }
-        let clubIds = myClubs.map(\.id.uuidString)
-        let count: Int = try await client
-            .from("club_book_history")
-            .select("book_id", count: .exact)
-            .in("club_id", values: clubIds)
+        guard let uid = try? await currentUserID else { return 0 }
+        let response = try await client
+            .rpc("count_books_read", params: ["p_user_id": uid.uuidString])
             .execute()
-            .count ?? 0
-        return count
+        return Int(String(data: response.data, encoding: .utf8) ?? "0") ?? 0
     }
     
     // MARK: - Book History

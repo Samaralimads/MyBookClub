@@ -107,7 +107,17 @@ struct ClubDetailView: View {
                             let base = url.components(separatedBy: "?").first ?? url
                             busted.coverImageURL = "\(base)?t=\(Int(Date().timeIntervalSince1970))"
                         }
-                        currentClub = busted   // ← triggers AsyncImage to reload
+                        currentClub = busted
+                        Task {
+                            if let fresh = await vm.reloadClub(clubId: updated.id) {
+                                var freshBusted = fresh
+                                if let url = fresh.coverImageURL {
+                                    let base = url.components(separatedBy: "?").first ?? url
+                                    freshBusted.coverImageURL = "\(base)?t=\(Int(Date().timeIntervalSince1970))"
+                                }
+                                currentClub = freshBusted
+                            }
+                        }
                     },
                     onClubDeleted: { dismiss() }
                 )
