@@ -13,6 +13,7 @@ struct MyClubsView: View {
     @State private var isLoading            = false
     @State private var error: AppError?
     @State private var showCreate           = false
+    @State private var pendingCounts: [UUID: Int] = [:]
     
     var body: some View {
         ZStack {
@@ -73,7 +74,7 @@ struct MyClubsView: View {
                 ForEach(clubs) { club in
                     let role: MemberRole? = club.organiserId == SupabaseService.shared.client.auth.currentUser?.id ? .organiser : .member
                     NavigationLink(value: club) {
-                        ClubCard(club: club, userRole: role)
+                        ClubCard(club: club, userRole: role, pendingCount: pendingCounts[club.id, default: 0])
                     }
                     .buttonStyle(.plain)
                 }
@@ -96,8 +97,24 @@ struct MyClubsView: View {
         error = nil
         do {
             clubs = try await SupabaseService.shared.fetchMyClubs()
+            await loadPendingCounts()
         } catch {
             self.error = AppError(underlying: error)
+        }
+    }
+
+    private func loadPendingCounts() async {
+        let currentUserId = SupabaseService.shared.client.auth.currentUser?.id
+        await withTaskGroup(of: (UUID, Int).self) { group in
+            for club in clubs where club.organiserId == currentUserId {
+                group.addTask {
+                    let count = (try? await SupabaseService.shared.fetchPendingMembers(clubId: club.id))?.count ?? 0
+                    return (club.id, count)
+                }
+            }
+            for await (id, count) in group {
+                pendingCounts[id] = count
+            }
         }
     }
 }

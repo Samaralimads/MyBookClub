@@ -19,6 +19,9 @@ struct ClubAboutTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             meetingSection
+            if vm.isOrganiser && !vm.pendingMembers.isEmpty {
+                pendingRequestsSection
+            }
             descriptionSection
             membersSection
         }
@@ -92,6 +95,39 @@ struct ClubAboutTab: View {
                     .font(.appBody)
                     .foregroundStyle(.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: - Pending requests section
+
+    private var pendingRequestsSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack(spacing: Spacing.sm) {
+                Text("Join Requests")
+                    .font(.appHeadline)
+                    .foregroundStyle(.inkPrimary)
+                Text("\(vm.pendingMembers.count)")
+                    .font(.appCaption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.accent)
+                    .clipShape(.rect(cornerRadius: 20))
+            }
+
+            VStack(spacing: Spacing.sm) {
+                ForEach(vm.pendingMembers) { user in
+                    PendingMembersRow(
+                        user: user,
+                        onApprove: {
+                            Task { await vm.approveMember(clubId: club.id, user: user) }
+                        },
+                        onReject: {
+                            Task { await vm.rejectMember(clubId: club.id, user: user) }
+                        }
+                    )
+                }
             }
         }
     }

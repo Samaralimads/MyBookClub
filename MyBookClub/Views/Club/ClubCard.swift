@@ -10,6 +10,7 @@ import SwiftUI
 struct ClubCard: View {
     let club: Club
     var userRole: MemberRole? = nil
+    var pendingCount: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,6 +29,18 @@ struct ClubCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 160)
             .clipped()
+            .overlay(alignment: .topTrailing) {
+                if pendingCount > 0 {
+                    Text("\(pendingCount)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 22, minHeight: 22)
+                        .padding(.horizontal, 5)
+                        .background(Color.accent)
+                        .clipShape(.circle)
+                        .padding(Spacing.sm)
+                }
+            }
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
 

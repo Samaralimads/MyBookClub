@@ -19,6 +19,7 @@ final class ClubDetailViewModel {
     private(set) var membershipStatus: MemberStatus?
     private(set) var myRole: MemberRole?
     private(set) var members: [AppUser] = []
+    private(set) var pendingMembers: [AppUser] = []
 
     // MARK: - Meeting
 
@@ -62,6 +63,7 @@ final class ClubDetailViewModel {
             group.addTask { await self.loadMembership(clubId: clubId) }
             group.addTask { await self.loadMembers(clubId: clubId) }
             group.addTask { await self.loadNextMeeting(clubId: clubId) }
+            group.addTask { await self.loadPendingMembers(clubId: clubId) }
         }
     }
 
@@ -86,6 +88,15 @@ final class ClubDetailViewModel {
     private func loadMembers(clubId: UUID) async {
         do {
             members = try await SupabaseService.shared.fetchClubMembers(clubId: clubId)
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    private func loadPendingMembers(clubId: UUID) async {
+        guard isOrganiser else { return }
+        do {
+            pendingMembers = try await SupabaseService.shared.fetchPendingMembers(clubId: clubId)
         } catch {
             self.error = AppError(underlying: error)
         }
@@ -201,6 +212,27 @@ final class ClubDetailViewModel {
                 address: address,
                 isFinal: isFinal
             )
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    // MARK: - Approve / Reject join requests
+
+    func approveMember(clubId: UUID, user: AppUser) async {
+        do {
+            try await SupabaseService.shared.approveMember(clubId: clubId, userId: user.id)
+            pendingMembers.removeAll { $0.id == user.id }
+            members.append(user)
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+
+    func rejectMember(clubId: UUID, user: AppUser) async {
+        do {
+            try await SupabaseService.shared.rejectMember(clubId: clubId, userId: user.id)
+            pendingMembers.removeAll { $0.id == user.id }
         } catch {
             self.error = AppError(underlying: error)
         }
