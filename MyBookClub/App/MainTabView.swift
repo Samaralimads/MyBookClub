@@ -40,6 +40,9 @@ struct MainTabView: View {
         .tint(.accent)
         .toolbarBackground(Color.cardBackground, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        .task {
+            await NotificationService.shared.requestPermission()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 selectedTab = .discover

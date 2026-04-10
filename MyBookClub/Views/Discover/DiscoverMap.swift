@@ -29,6 +29,7 @@ struct DiscoverMap: View {
             )
         } else {
             Map(position: $position, selection: $selectedClub) {
+                UserAnnotation()
                 ForEach(clubs) { club in
                     if let lat = club.lat, let lng = club.lng {
                         Annotation("", coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng), anchor: .bottom) {

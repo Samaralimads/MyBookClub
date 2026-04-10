@@ -63,18 +63,30 @@ struct SettingsView: View {
 
     private var preferencesSection: some View {
         SettingsGroup(header: "Preferences") {
-            // Notifications — navigates deeper (stub for now)
             SettingsRow(
                 icon: "bell.fill",
                 iconBackground: Color.accent,
                 title: "Notifications"
             ) {
-                // TODO: NavigationLink to NotificationsSettingsView
+                if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
             }
 
             SettingsDivider()
 
-            // Privacy
+            SettingsRow(
+                icon: "location.fill",
+                iconBackground: Color(red: 0.2, green: 0.6, blue: 0.9),
+                title: "Location Access"
+            ) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+
+            SettingsDivider()
+
             SettingsRow(
                 icon: "lock.fill",
                 iconBackground: Color(red: 0.2, green: 0.6, blue: 0.4),

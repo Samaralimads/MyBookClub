@@ -7,10 +7,12 @@
 
 import Foundation
 import UserNotifications
+import UIKit
 
 @Observable
 final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
-
+    
+    static let shared = NotificationService()
     var isAuthorized = false
 
     override init() {
@@ -25,6 +27,11 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
             let granted = try await UNUserNotificationCenter.current()
                 .requestAuthorization(options: [.alert, .sound, .badge])
             isAuthorized = granted
+            if granted {
+                await MainActor.run {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
         } catch {
             isAuthorized = false
         }
