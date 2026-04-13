@@ -18,33 +18,40 @@ struct MyClubsView: View {
     var body: some View {
         ZStack {
             Color.background.ignoresSafeArea()
-            
-            
-            
-            Group {
-                if isLoading {
-                    ProgressView().tint(.accent)
-                } else if let error {
-                    ContentUnavailableView(
-                        "Couldn't load clubs",
-                        systemImage: "wifi.slash",
-                        description: Text(error.message)
-                    )
-                } else if clubs.isEmpty {
-                    emptyState
-                } else {
-                    clubList
+
+            VStack(spacing: 0) {
+                HStack {
+                    Text("My Clubs")
+                        .font(.appTitle)
+                        .foregroundStyle(.inkPrimary)
+                    Spacer()
+                    Button("", systemImage: "plus", action: { showCreate = true })
+                        .tint(.accent)
                 }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.sm)
+                .background(Color.background)
+
+                Group {
+                    if isLoading {
+                        ProgressView().tint(.accent)
+                    } else if let error {
+                        ContentUnavailableView(
+                            "Couldn't load clubs",
+                            systemImage: "wifi.slash",
+                            description: Text(error.message)
+                        )
+                    } else if clubs.isEmpty {
+                        emptyState
+                    } else {
+                        clubList
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationTitle("My Clubs")
-        .navigationBarTitleDisplayMode(.automatic)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("", systemImage: "plus", action: { showCreate = true })
-                    .tint(.accent)
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showCreate) {
             NavigationStack {
                 CreateClubView { newClub in

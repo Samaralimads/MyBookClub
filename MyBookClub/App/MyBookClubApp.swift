@@ -7,6 +7,8 @@
 
 import SwiftUI
 import UserNotifications
+import GoogleSignIn
+
 
 @main
 struct MyBookClubApp: App {
@@ -47,5 +49,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         print("❌ Failed to register for remote notifications: \(error)")
+    }
+    
+    func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }

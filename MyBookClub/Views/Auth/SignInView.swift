@@ -106,7 +106,31 @@ struct SignInView: View {
                                 .stroke(Color.border, lineWidth: 1)
                         )
                         .padding(.horizontal, Spacing.xl)
-                        .padding(.bottom, Spacing.xl)
+                        .padding(.bottom, Spacing.lg)
+                        
+                        
+                        // Sign in with Google
+                        Button {
+                            Task { await authVM.signInWithGoogle() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image("google_logo")
+                                    .resizable()
+                                    .frame(width: 19, height: 19)
+                                Text("Continue with Google")
+                                    .font(.system(size: 19, weight: .medium))
+                                    .foregroundStyle(.inkPrimary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.cardBackground)
+                            .clipShape(.rect(cornerRadius: CornerRadius.button))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: CornerRadius.button)
+                                    .stroke(Color.border, lineWidth: 1)
+                            }
+                        }
+                        .padding(.horizontal, Spacing.xl)
                     }
                 }
                 

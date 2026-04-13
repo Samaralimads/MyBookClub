@@ -18,13 +18,7 @@ struct ProfileView: View {
             Color.background.ignoresSafeArea()
             scrollContent
         }
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                settingsButton
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .task { await vm.load() }
         .navigationDestination(isPresented: $showSettings) {
             SettingsView()
@@ -45,6 +39,18 @@ struct ProfileView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 0) {
+                HStack {
+                    Text("Profile")
+                        .font(.appTitle)
+                        .foregroundStyle(.inkPrimary)
+                    Spacer()
+                    settingsButton
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.sm)
+                .background(Color.background)
+
                 heroSection
                 Divider().overlay(Color.border)
 

@@ -17,17 +17,24 @@ struct MeetingsView: View {
             Color.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                segmentPicker
+                Text("Meetings")
+                    .font(.appTitle)
+                    .foregroundStyle(.inkPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
+                    .background(Color.background)
+
+                segmentPicker
+                    .padding(.horizontal, Spacing.lg)
                     .padding(.bottom, Spacing.sm)
 
                 meetingList
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .navigationTitle("Meetings")
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         .task { await vm.load() }
         .navigationDestination(for: Meeting.self) { meeting in
             MeetingDetailView(meeting: meeting)
@@ -57,7 +64,9 @@ struct MeetingsView: View {
                 .tint(.accent)
             Spacer()
         } else if meetings.isEmpty {
+            Spacer()
             emptyState
+            Spacer()
         } else {
             ScrollView {
                 LazyVStack(spacing: Spacing.md) {

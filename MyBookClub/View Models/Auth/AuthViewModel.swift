@@ -9,34 +9,35 @@ import Foundation
 import SwiftUI
 import AuthenticationServices
 import Supabase
+import GoogleSignIn
 
 @Observable
 final class AuthViewModel {
-
+    
     // MARK: - Auth State
-
+    
     enum AuthState {
         case loading
         case unauthenticated
         case needsOnboarding
         case authenticated
     }
-
+    
     var authState: AuthState = .loading
     var error: AppError?
     var isLoading = false
-
+    
     // Captured during sign-up or Apple — passed to onboarding
     var pendingDisplayName = ""
-
+    
     // Password reset
     var resetPasswordSent = false
-
+    
     // MARK: - Sign In Fields + Validation
-
+    
     var signInEmail    = ""
     var signInPassword = ""
-
+    
     var signInEmailError: String? {
         guard !signInEmail.isEmpty else { return nil }
         return isValidEmail(signInEmail) ? nil : "Enter a valid email address"
@@ -47,19 +48,19 @@ final class AuthViewModel {
     }
     var canSignIn: Bool {
         signInEmailError == nil && signInPasswordError == nil
-            && !signInEmail.isEmpty && !signInPassword.isEmpty
+        && !signInEmail.isEmpty && !signInPassword.isEmpty
     }
-
+    
     // MARK: - Sign Up Fields + Validation
-
+    
     var signUpName            = ""
     var signUpEmail           = ""
     var signUpPassword        = ""
-
+    
     var signUpNameError: String? {
         guard !signUpName.isEmpty else { return nil }
         return signUpName.trimmingCharacters(in: .whitespaces).count >= 2
-            ? nil : "Name must be at least 2 characters"
+        ? nil : "Name must be at least 2 characters"
     }
     var signUpEmailError: String? {
         guard !signUpEmail.isEmpty else { return nil }
@@ -93,27 +94,27 @@ final class AuthViewModel {
     }
     var canSignUp: Bool {
         signUpNameError == nil && signUpEmailError == nil
-            && signUpPasswordError == nil
-            && !signUpName.trimmingCharacters(in: .whitespaces).isEmpty
-            && !signUpEmail.isEmpty && !signUpPassword.isEmpty 
+        && signUpPasswordError == nil
+        && !signUpName.trimmingCharacters(in: .whitespaces).isEmpty
+        && !signUpEmail.isEmpty && !signUpPassword.isEmpty
     }
-
+    
     // MARK: - Helpers
-
+    
     private func isValidEmail(_ email: String) -> Bool {
         let pattern = #"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"#
         return email.range(of: pattern, options: .regularExpression) != nil
     }
-
+    
     // MARK: - Supabase Auth Listener
-
+    
     func startListening() async {
         if SupabaseService.shared.client.auth.currentSession != nil {
             await checkOnboardingStatus()
         } else {
             authState = .unauthenticated
         }
-
+        
         for await (event, _) in SupabaseService.shared.client.auth.authStateChanges {
             switch event {
             case .signedIn:
@@ -125,7 +126,7 @@ final class AuthViewModel {
             }
         }
     }
-
+    
     private func checkOnboardingStatus() async {
         do {
             let user = try await SupabaseService.shared.fetchCurrentUser()
@@ -138,14 +139,14 @@ final class AuthViewModel {
             authState = .needsOnboarding
         }
     }
-
+    
     // MARK: - Sign In With Apple
-
+    
     func handleAppleSignIn(result: Result<ASAuthorization, Error>) async {
         isLoading = true
         defer { isLoading = false }
         error = nil
-
+        
         do {
             guard case .success(let auth) = result,
                   let credential = auth.credential as? ASAuthorizationAppleIDCredential,
@@ -160,11 +161,11 @@ final class AuthViewModel {
                 }
                 return
             }
-
+            
             if let firstName = credential.fullName?.givenName {
                 pendingDisplayName = firstName
             }
-
+            
             try await SupabaseService.shared.client.auth.signInWithIdToken(
                 credentials: .init(provider: .apple, idToken: tokenString)
             )
@@ -172,14 +173,48 @@ final class AuthViewModel {
             self.error = AppError(underlying: error)
         }
     }
-
+    
+    // MARK: - Sign In With Google
+    
+    func signInWithGoogle() async {
+        isLoading = true
+        defer { isLoading = false }
+        error = nil
+        
+        do {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let rootViewController = windowScene.windows.first?.rootViewController
+            else { return }
+            
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            
+            guard let idToken = result.user.idToken?.tokenString else {
+                self.error = AppError("Google Sign In failed — no ID token")
+                return
+            }
+            
+            let accessToken = result.user.accessToken.tokenString
+            
+            try await SupabaseService.shared.client.auth.signInWithIdToken(
+                credentials: .init(
+                    provider: .google,
+                    idToken: idToken,
+                    accessToken: accessToken
+                )
+            )
+        } catch {
+            self.error = AppError(underlying: error)
+        }
+    }
+    
+    
     // MARK: - Email Sign In
-
+    
     func signInWithEmail() async {
         isLoading = true
         defer { isLoading = false }
         error = nil
-
+        
         do {
             try await SupabaseService.shared.client.auth.signIn(
                 email: signInEmail.lowercased().trimmingCharacters(in: .whitespaces),
@@ -189,16 +224,16 @@ final class AuthViewModel {
             self.error = AppError(underlying: error)
         }
     }
-
+    
     // MARK: - Email Sign Up
-
+    
     func signUpWithEmail() async {
         isLoading = true
         defer { isLoading = false }
         error = nil
-
+        
         pendingDisplayName = signUpName.trimmingCharacters(in: .whitespaces)
-
+        
         do {
             try await SupabaseService.shared.client.auth.signUp(
                 email: signUpEmail.lowercased().trimmingCharacters(in: .whitespaces),
@@ -208,13 +243,13 @@ final class AuthViewModel {
             self.error = AppError(underlying: error)
         }
     }
-
+    
     // MARK: - Forgot Password
-
+    
     func isValidResetEmail(_ email: String) -> Bool {
         isValidEmail(email)
     }
-
+    
     func sendPasswordReset(email: String) async {
         isLoading = true
         defer { isLoading = false }
@@ -226,9 +261,9 @@ final class AuthViewModel {
             self.error = AppError(underlying: error)
         }
     }
-
+    
     // MARK: - Sign Out
-
+    
     func signOut() async {
         isLoading = true
         defer { isLoading = false }

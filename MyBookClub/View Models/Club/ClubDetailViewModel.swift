@@ -259,6 +259,33 @@ final class ClubDetailViewModel {
         }
     }
 
+    // MARK: - Club URL
+
+    func shareURL(for clubId: UUID) -> URL {
+        URL(string: "https://mybookclub.app/club/\(clubId.uuidString)")
+            ?? URL(string: "https://mybookclub.app")!
+    }
+
+    // MARK: - Apply club update (cache-bust cover + reload)
+
+    func applyClubUpdate(_ updated: Club) async -> Club {
+        var busted = cacheBust(updated)
+        if let fresh = await reloadClub(clubId: updated.id) {
+            busted = cacheBust(fresh)
+        }
+        return busted
+    }
+
+    private func cacheBust(_ club: Club) -> Club {
+        var result = club
+        if let url = club.coverImageURL {
+            let base = url.components(separatedBy: "?").first ?? url
+            let timestamp = Int(Date().timeIntervalSince1970)
+            result.coverImageURL = "\(base)?t=\(timestamp)"
+        }
+        return result
+    }
+
     // MARK: - Leave club
 
     func leaveClub(clubId: UUID) async {

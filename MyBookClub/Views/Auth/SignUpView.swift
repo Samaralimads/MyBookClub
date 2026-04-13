@@ -111,8 +111,30 @@ struct SignUpView: View {
                                 .stroke(Color.border, lineWidth: 1)
                         )
                         .padding(.horizontal, Spacing.xl)
-                        .padding(.bottom, Spacing.xxl)
+                        .padding(.bottom, Spacing.lg)
 
+                        // Sign up with Google
+                        Button {
+                            Task { await authVM.signInWithGoogle() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image("google_logo")
+                                    .resizable()
+                                    .frame(width: 19, height: 19)
+                                Text("Continue with Google")
+                                    .font(.system(size: 19, weight: .medium))
+                                    .foregroundStyle(.inkPrimary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.cardBackground)
+                            .clipShape(.rect(cornerRadius: CornerRadius.button))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: CornerRadius.button)
+                                    .stroke(Color.border, lineWidth: 1)
+                            }
+                        }
+                        .padding(.horizontal, Spacing.xl)
                         
                         // Already have account
                         HStack(spacing: 4) {
@@ -123,7 +145,7 @@ struct SignUpView: View {
                                 .font(.appCaption.weight(.semibold))
                                 .foregroundStyle(.accent)
                         }
-                        .padding(.vertical, Spacing.xxl)
+                        .padding(.vertical, Spacing.lg)
                         
                         // Terms
                         Text("By creating an account, you agree to our [Terms of Service](\(Config.termsURL)) and [Privacy Policy](\(Config.privacyPolicyURL)).")
