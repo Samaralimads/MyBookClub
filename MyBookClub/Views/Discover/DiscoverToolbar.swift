@@ -48,7 +48,13 @@ struct SearchBar: View {
                 .onSubmit(onSubmit)
 
             if !text.isEmpty {
-                Button(action: onClear) {
+                Button {
+                    onClear()
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
+                } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.inkTertiary)
                 }

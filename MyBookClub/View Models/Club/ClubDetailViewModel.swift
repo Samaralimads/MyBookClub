@@ -51,7 +51,7 @@ final class ClubDetailViewModel {
         return count >= club.memberCap
     }
 
-    // MARK: - Initial load (all in parallel)
+    // MARK: - Initial load
 
     /// Single entry point called from ClubDetailView.task.
     /// Runs all fetches concurrently and sets isLoading = false when done.
@@ -59,8 +59,11 @@ final class ClubDetailViewModel {
         isLoading = true
         defer { isLoading = false }
 
+        // Load membership first so isOrganiser is set before fetching pending members
+        await loadMembership(clubId: clubId)
+
+        // Then load the rest in parallel
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.loadMembership(clubId: clubId) }
             group.addTask { await self.loadMembers(clubId: clubId) }
             group.addTask { await self.loadNextMeeting(clubId: clubId) }
             group.addTask { await self.loadPendingMembers(clubId: clubId) }
@@ -98,7 +101,7 @@ final class ClubDetailViewModel {
         do {
             pendingMembers = try await SupabaseService.shared.fetchPendingMembers(clubId: clubId)
         } catch {
-            self.error = AppError(underlying: error)
+            // Ignore — non-organisers will be blocked by RLS
         }
     }
 

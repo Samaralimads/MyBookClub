@@ -116,9 +116,9 @@ struct SignInView: View {
                             HStack(spacing: 8) {
                                 Image("google_logo")
                                     .resizable()
-                                    .frame(width: 19, height: 19)
+                                    .frame(width: 17, height: 17)
                                 Text("Continue with Google")
-                                    .font(.system(size: 19, weight: .medium))
+                                    .font(.system(size: 19, weight: .semibold))
                                     .foregroundStyle(.inkPrimary)
                             }
                             .frame(maxWidth: .infinity)
@@ -133,6 +133,8 @@ struct SignInView: View {
                         .padding(.horizontal, Spacing.xl)
                     }
                 }
+                .scrollIndicators(.hidden)
+
                 
             if authVM.isLoading {
                 LoadingOverlay()

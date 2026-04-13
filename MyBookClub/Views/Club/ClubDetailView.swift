@@ -262,10 +262,11 @@ struct ClubDetailView: View {
     
     private var joinedMenu: some View {
         Menu {
-            Button(role: .none) { } label: {
-                Label("Manage Notifications", systemImage: "bell")
-            }
-            Divider()
+        // TODO: for v2 (per-club notification preferences for each user)
+//            Button(role: .none) { } label: {
+//                Label("Manage Notifications", systemImage: "bell")
+//            }
+//            Divider()
             Button(role: .destructive) {
                 Task { await vm.leaveClub(clubId: club.id) }
             } label: {

@@ -13,6 +13,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>256269938638-hpb3fi5vnuqtafnbo19uud4g29lr3iri.apps.googleusercontent.com</string>
 	<key>GOOGLE_BOOKS_KEY</key>
 	<string>$(GOOGLE_BOOKS_KEY)</string>
 	<key>SUPABASE_ANON_KEY</key>

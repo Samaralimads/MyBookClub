@@ -19,6 +19,9 @@ struct MyBookClubApp: App {
         WindowGroup {
             RootView()
                 .environment(authVM)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
                 .task {
                     await authVM.startListening()
                 }
@@ -49,13 +52,5 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         print("❌ Failed to register for remote notifications: \(error)")
-    }
-    
-    func application(
-        _ app: UIApplication,
-        open url: URL,
-        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
-    ) -> Bool {
-        return GIDSignIn.sharedInstance.handle(url)
     }
 }

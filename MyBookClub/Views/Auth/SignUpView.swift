@@ -120,9 +120,9 @@ struct SignUpView: View {
                             HStack(spacing: 8) {
                                 Image("google_logo")
                                     .resizable()
-                                    .frame(width: 19, height: 19)
+                                    .frame(width: 17, height: 17)
                                 Text("Continue with Google")
-                                    .font(.system(size: 19, weight: .medium))
+                                    .font(.system(size: 19, weight: .semibold))
                                     .foregroundStyle(.inkPrimary)
                             }
                             .frame(maxWidth: .infinity)
@@ -149,7 +149,8 @@ struct SignUpView: View {
                         
                         // Terms
                         Text("By creating an account, you agree to our [Terms of Service](\(Config.termsURL)) and [Privacy Policy](\(Config.privacyPolicyURL)).")
-                            .font(.footnote)                    .foregroundStyle(.inkTertiary)
+                            .font(.footnote)
+                            .foregroundStyle(.inkTertiary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, Spacing.xl)
                             .frame(maxWidth: .infinity)
@@ -157,6 +158,7 @@ struct SignUpView: View {
                         
                     }
                 }
+                .scrollIndicators(.hidden)
 
                
             
