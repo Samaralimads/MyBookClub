@@ -34,7 +34,12 @@ final class ProfileViewModel {
 
             let (resolvedUser, resolvedClubs, resolvedHistory) = try await (fetchedUser, fetchedClubs, fetchedHistory)
 
-            user      = resolvedUser
+            var resolvedUserWithFreshAvatar = resolvedUser
+            if let url = resolvedUser.avatarURL {
+                let base = url.components(separatedBy: "?").first ?? url
+                resolvedUserWithFreshAvatar.avatarURL = "\(base)?t=\(Int(Date.now.timeIntervalSince1970))"
+            }
+            user      = resolvedUserWithFreshAvatar
             clubCount = resolvedClubs.count
             booksRead = resolvedHistory
             currentlyReadingBooks = resolvedClubs.compactMap { club in
