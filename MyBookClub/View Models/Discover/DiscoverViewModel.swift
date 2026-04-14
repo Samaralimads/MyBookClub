@@ -28,17 +28,24 @@ final class DiscoverViewModel {
 
     // Location
     var locationService = LocationService()
+    private var hasReloadedWithRealLocation = false
 
     // MARK: - Load
+
+    func initialLoad() async {
+        if locationService.authorizationStatus == .notDetermined {
+            locationService.requestWhenInUse()
+        } else if locationService.authorizationStatus == .authorizedWhenInUse ||
+                  locationService.authorizationStatus == .authorizedAlways {
+            locationService.startUpdating()
+        }
+        await loadClubs()
+    }
 
     func loadClubs() async {
         isLoading = true
         defer { isLoading = false }
         error = nil
-
-        if locationService.authorizationStatus == .notDetermined {
-            locationService.requestWhenInUse()
-        }
 
         do {
             async let nearbyClubs = SupabaseService.shared.fetchNearbyClubs(
@@ -58,8 +65,16 @@ final class DiscoverViewModel {
         }
     }
 
+    func onLocationUpdated() async {
+        guard !hasReloadedWithRealLocation,
+              locationService.currentLocation != nil else { return }
+        hasReloadedWithRealLocation = true
+        locationService.stopUpdating()
+        await loadClubs()
+    }
+
     // MARK: - Role helper
-    
+
     func role(for club: Club) -> MemberRole? {
         guard myClubIds.contains(club.id) else { return nil }
         return club.organiserId == SupabaseService.shared.client.auth.currentUser?.id ? .organiser : .member

@@ -42,16 +42,13 @@ final class ClubBookViewModel {
             completed.insert(chapter)
         }
         let sorted = completed.sorted()
-
         readingProgress?.completedChapters = sorted
-
         do {
             try await SupabaseService.shared.upsertReadingProgress(
                 clubId: clubId,
                 bookId: bookId,
                 completedChapters: sorted
             )
-
             if readingProgress == nil {
                 readingProgress = try await SupabaseService.shared.fetchReadingProgress(
                     clubId: clubId,

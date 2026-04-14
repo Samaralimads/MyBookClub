@@ -36,6 +36,7 @@ struct ClubDetailView: View {
             .background(Color.background)
             .animation(Animations.standard, value: vm.isLoading)
             .task {
+                vm.isLoading = true
                 if let fresh = await vm.reloadClub(clubId: club.id) {
                     currentClub = fresh
                 }

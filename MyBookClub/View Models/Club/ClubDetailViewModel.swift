@@ -12,7 +12,7 @@ final class ClubDetailViewModel {
 
     // MARK: - Loading
 
-    private(set) var isLoading = true
+    var isLoading = true
 
     // MARK: - Membership
 

@@ -35,6 +35,12 @@ struct ClubBookTab: View {
             let archived = await vm.load(club: club, isMember: isMember)
             if archived { onArchived?() }
         }
+        .onChange(of: club.currentBookId) { _, _ in
+            Task {
+                let archived = await vm.load(club: club, isMember: isMember)
+                if archived { onArchived?() }
+            }
+        }
     }
 
     // MARK: - Members only

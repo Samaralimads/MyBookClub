@@ -16,10 +16,24 @@ final class SupabaseService {
     private let iso8601 = ISO8601DateFormatter()
     
     private init() {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let str = try container.decode(String.self)
+            let iso = ISO8601DateFormatter()
+            if let date = iso.date(from: str) { return date }
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: str) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(str)")
+        }
+
         client = SupabaseClient(
             supabaseURL: URL(string: Config.supabaseURL)!,
             supabaseKey: Config.supabaseAnonKey,
             options: SupabaseClientOptions(
+                db: SupabaseClientOptions.DatabaseOptions(
+                    decoder: decoder
+                ),
                 auth: SupabaseClientOptions.AuthOptions(
                     emitLocalSessionAsInitialSession: true
                 )
@@ -39,7 +53,15 @@ final class SupabaseService {
     
     private var decoder: JSONDecoder {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let str = try container.decode(String.self)
+            let iso = ISO8601DateFormatter()
+            if let date = iso.date(from: str) { return date }
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = iso.date(from: str) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(str)")
+        }
         return d
     }
     
@@ -118,7 +140,7 @@ final class SupabaseService {
     func fetchClub(id: UUID) async throws -> Club {
         var club: Club = try await client
                 .from("clubs")
-                .select("*, books(*), lat:ST_Y(location::geometry), lng:ST_X(location::geometry)")
+                .select("*, books(*)")
                 .eq("id", value: id.uuidString)
                 .single()
                 .execute()
@@ -138,13 +160,13 @@ final class SupabaseService {
     
     func fetchMyClubs() async throws -> [Club] {
         guard let uid = try? await currentUserID else { return [] }
-        
-        var clubs: [Club] = try await client
+
+        let response = try await client
             .from("clubs")
-            .select("*, books(*), club_members!inner(user_id)")
+            .select("*, books(*), club_members!inner(user_id, status)")
             .eq("club_members.user_id", value: uid.uuidString)
             .execute()
-            .value
+        var clubs: [Club] = try decoder.decode([Club].self, from: response.data)
         
         for i in clubs.indices {
             let count: Int = try await client
@@ -540,7 +562,16 @@ final class SupabaseService {
             .limit(1)
             .execute()
             .value
-        return rows.first
+        guard let meeting = rows.first else { return nil }
+        let historyRows: [ClubBookHistory] = try await client
+            .from("club_book_history")
+            .select("*, books(*)")
+            .eq("club_id", value: clubId.uuidString)
+            .gte("finished_at", value: iso8601.string(from: meeting.scheduledAt))
+            .execute()
+            .value
+        if !historyRows.isEmpty { return nil }
+        return meeting
     }
     
     func archiveBook(clubId: UUID, bookId: UUID) async throws {

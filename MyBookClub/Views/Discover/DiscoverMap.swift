@@ -22,10 +22,10 @@ struct DiscoverMap: View {
 
     var body: some View {
         if clubs.isEmpty {
-            ContentUnavailableView(
-                "No clubs nearby yet",
-                systemImage: "book.closed",
-                description: Text("Be the first to create one!")
+            EmptyStateView(
+                icon: "map",
+                title: "No clubs found nearby",
+                description: "Be the first to create one!"
             )
         } else {
             Map(position: $position, selection: $selectedClub) {

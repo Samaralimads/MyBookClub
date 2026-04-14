@@ -12,42 +12,47 @@ struct DiscoverView: View {
     @State private var showCreate = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            Text("Discover")
-                .font(.appTitle)
-                .foregroundStyle(.inkPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.sm)
-                .background(Color.background)
-
-            DiscoverToolbar(vm: vm)
-
-            Divider()
-                .background(Color.border)
-
-            Group {
-                if vm.showMap {
-                    DiscoverMap(clubs: vm.clubs, userRole: vm.role(for:))
-                        .transition(.opacity)
-                } else {
-                    discoverList
-                        .transition(.opacity)
+        NavigationStack {
+            VStack(spacing: 0) {
+                Text("Discover")
+                    .font(.appTitle)
+                    .foregroundStyle(.inkPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
+                    .background(Color.background)
+                
+                DiscoverToolbar(vm: vm)
+                
+                Divider()
+                    .background(Color.border)
+                
+                Group {
+                    if vm.showMap {
+                        DiscoverMap(clubs: vm.clubs, userRole: vm.role(for:))
+                            .transition(.opacity)
+                    } else {
+                        discoverList
+                            .transition(.opacity)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .toolbar(.hidden, for: .navigationBar)
-        .background(Color.background.ignoresSafeArea())
-        .task { await vm.loadClubs() }
-        .navigationDestination(for: Club.self) { club in
-            ClubDetailView(club: club)
-        }
-        .sheet(isPresented: $showCreate) {
-            NavigationStack {
-                CreateClubView { _ in
-                    Task { await vm.loadClubs() }
+            .toolbar(.hidden, for: .navigationBar)
+            .background(Color.background.ignoresSafeArea())
+            .task { await vm.loadClubs() }
+            .onChange(of: vm.locationService.currentLocation) { _, _ in
+                Task { await vm.onLocationUpdated() }
+            }
+            .navigationDestination(for: Club.self) { club in
+                ClubDetailView(club: club)
+            }
+            .sheet(isPresented: $showCreate) {
+                NavigationStack {
+                    CreateClubView { _ in
+                        Task { await vm.loadClubs() }
+                    }
                 }
             }
         }

@@ -14,9 +14,7 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Discover", systemImage: "map.fill", value: AppTab.discover) {
-                NavigationStack {
-                    DiscoverView()
-                }
+                DiscoverView()
             }
             
             Tab("My Clubs", systemImage: "books.vertical.fill", value: AppTab.myClubs) {
