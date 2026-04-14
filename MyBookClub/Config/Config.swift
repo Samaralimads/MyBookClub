@@ -19,8 +19,11 @@ enum Config {
     static let telemetryDeckID = secret("TELEMETRY_DECK_ID")
 
     // ── App ─────────────────────────────────────────────────────
-    static let privacyPolicyURL = "https://mybookclub.app/privacy"
-    static let termsURL         = "https://mybookclub.app/terms"
+    static let privacyPolicyURL  = "https://samaralimads.github.io/mybookclub-legal"
+    static let termsURL          = "https://samaralimads.github.io/mybookclub-legal/#terms"
+    static let supportEmail      = "app.mybookclub@gmail.com"
+    // TODO: After App Store submission, replace YOUR_APP_ID with your numeric App Store ID
+    static let appStoreReviewURL = "https://apps.apple.com/app/idYOUR_APP_ID?action=write-review"
 
     // MARK: - Internal helper
     private static func secret(_ key: String) -> String {
@@ -35,4 +38,3 @@ enum Config {
         return value
     }
 }
-

@@ -87,13 +87,12 @@ struct SettingsView: View {
 
             SettingsDivider()
 
-            SettingsRow(
+            SettingsLinkRow(
                 icon: "lock.fill",
                 iconBackground: Color(red: 0.2, green: 0.6, blue: 0.4),
-                title: "Privacy"
-            ) {
-                // TODO: NavigationLink to PrivacySettingsView
-            }
+                title: "Privacy Policy",
+                url: URL(string: Config.privacyPolicyURL)!
+            )
         }
     }
 
@@ -130,11 +129,12 @@ struct SettingsView: View {
                     icon: "square.and.arrow.up.fill",
                     iconBackground: Color(red: 0.6, green: 0.4, blue: 0.8),
                     title: "Export My Data",
-                    showChevron: false,
-                    trailing: vm.isExporting
-                        ? AnyView(ProgressView().tint(.accent))
-                        : AnyView(EmptyView())
-                )
+                    showChevron: false
+                ) {
+                    if vm.isExporting {
+                        ProgressView().tint(.accent)
+                    }
+                }
             }
             .disabled(vm.isExporting)
 
@@ -244,13 +244,13 @@ private struct SettingsLinkRow: View {
 
 // MARK: - Settings Row Label (shared layout)
 
-private struct SettingsRowLabel: View {
+private struct SettingsRowLabel<Trailing: View>: View {
     let icon: String
     let iconBackground: Color
     let title: String
     var titleColor: Color = .inkPrimary
     var showChevron: Bool = true
-    var trailing: AnyView = AnyView(EmptyView())
+    @ViewBuilder var trailing: Trailing
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -280,6 +280,23 @@ private struct SettingsRowLabel: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.md)
         .contentShape(.rect)
+    }
+}
+
+private extension SettingsRowLabel where Trailing == EmptyView {
+    init(
+        icon: String,
+        iconBackground: Color,
+        title: String,
+        titleColor: Color = .inkPrimary,
+        showChevron: Bool = true
+    ) {
+        self.icon = icon
+        self.iconBackground = iconBackground
+        self.title = title
+        self.titleColor = titleColor
+        self.showChevron = showChevron
+        self.trailing = EmptyView()
     }
 }
 

@@ -19,6 +19,8 @@ final class SettingsViewModel {
     // Confirmation dialogs
     var showDeleteConfirm = false
 
+    private let iso8601 = ISO8601DateFormatter()
+
     // MARK: - Export My Data (GDPR)
 
     func exportData() async {
@@ -40,7 +42,7 @@ final class SettingsViewModel {
             let payload = ExportPayload(
                 profile: user,
                 clubs: clubs,
-                exportedAt: ISO8601DateFormatter().string(from: .now)
+                exportedAt: iso8601.string(from: .now)
             )
 
             let data = try JSONEncoder().encode(payload)

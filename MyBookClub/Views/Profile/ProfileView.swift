@@ -52,14 +52,14 @@ struct ProfileView: View {
                 .background(Color.background)
 
                 heroSection
-                Divider().overlay(Color.border)
+                Divider().overlay { Color.border }
 
                 statsSection
-                Divider().overlay(Color.border)
+                Divider().overlay { Color.border }
 
                 if let genres = vm.user?.genrePrefs, !genres.isEmpty {
                     genresSection(genres)
-                    Divider().overlay(Color.border)
+                    Divider().overlay { Color.border }
                 }
 
                 if !vm.currentlyReadingBooks.isEmpty {
@@ -103,7 +103,7 @@ struct ProfileView: View {
             statItem(value: vm.clubCount, label: "Clubs Joined")
             Divider()
                 .frame(height: 36)
-                .overlay(Color.border)
+                .overlay { Color.border }
             statItem(value: vm.booksRead, label: "Books Read")
         }
         .padding(.vertical, Spacing.lg)

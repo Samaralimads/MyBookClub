@@ -41,7 +41,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     /// Call from AppDelegate / SwiftUI .onReceive(NotificationCenter.default.publisher)
     func registerDeviceToken(_ tokenData: Data) async {
-        let token = tokenData.map { String(format: "%02.2hhx", $0) }.joined()
+        let token = tokenData.map { String($0, radix: 16, uppercase: false).leftPadded(toLength: 2) }.joined()
         try? await SupabaseService.shared.updateAPNSToken(token)
     }
 
@@ -58,7 +58,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
         // 24h reminder
         let minus24h = meeting.scheduledAt.addingTimeInterval(-86400)
-        if minus24h > Date() {
+        if minus24h > .now {
             content.body = "Tomorrow: \(meeting.title)"
             let trigger24 = UNCalendarNotificationTrigger(
                 dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: minus24h),
@@ -74,8 +74,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
         // 1h reminder
         let minus1h = meeting.scheduledAt.addingTimeInterval(-3600)
-        if minus1h > Date() {
-            let content1h = content.mutableCopy() as! UNMutableNotificationContent
+        if minus1h > .now {
+            guard let content1h = content.mutableCopy() as? UNMutableNotificationContent else { return }
             content1h.body = "Starting in 1 hour: \(meeting.title)"
             let trigger1h = UNCalendarNotificationTrigger(
                 dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: minus1h),
@@ -108,5 +108,15 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound])
+    }
+}
+
+// MARK: - String helper
+
+private extension String {
+    /// Left-pads a string to `length` with the given character (default "0").
+    func leftPadded(toLength length: Int, with character: Character = "0") -> String {
+        let pad = max(0, length - count)
+        return String(repeating: character, count: pad) + self
     }
 }

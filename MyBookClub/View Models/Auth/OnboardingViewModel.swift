@@ -74,7 +74,7 @@ final class OnboardingViewModel {
                 city: nil,
                 readingFreq: readingFreq,
                 apnsToken: nil,
-                createdAt: Date()
+                createdAt: .now
             )
 
             try await SupabaseService.shared.upsertUser(user)

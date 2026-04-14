@@ -214,7 +214,7 @@ struct ClubDetailView: View {
                 Text("\(currentClub.memberCount ?? 0)/\(currentClub.memberCap)")
                     .font(.appBody)
             } else {
-                Text("^\(currentClub.memberCount ?? 0) Member](inflect: true)")
+                Text("^[\(currentClub.memberCount ?? 0) Member](inflect: true)")
                     .font(.appBody)
             }
         }

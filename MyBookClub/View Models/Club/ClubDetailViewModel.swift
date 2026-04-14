@@ -177,6 +177,7 @@ final class ClubDetailViewModel {
             rsvpStatus  = nil
             rsvpCounts  = RSVPCounts(goingCount: 0, notGoingCount: 0)
             rsvpMembers = []
+            NotificationService.shared.scheduleMeetingReminder(meeting: meeting)
         } catch {
             self.error = AppError(underlying: error)
         }
@@ -205,7 +206,8 @@ final class ClubDetailViewModel {
         isScheduling = true
         defer { isScheduling = false }
         do {
-            nextMeeting = try await SupabaseService.shared.updateMeeting(
+            NotificationService.shared.cancelMeetingReminders(meetingId: existing.id)
+            let updated = try await SupabaseService.shared.updateMeeting(
                 meetingId: existing.id,
                 title: title,
                 scheduledAt: scheduledAt,
@@ -215,6 +217,8 @@ final class ClubDetailViewModel {
                 address: address,
                 isFinal: isFinal
             )
+            nextMeeting = updated
+            NotificationService.shared.scheduleMeetingReminder(meeting: updated)
         } catch {
             self.error = AppError(underlying: error)
         }
@@ -265,8 +269,8 @@ final class ClubDetailViewModel {
     // MARK: - Club URL
 
     func shareURL(for clubId: UUID) -> URL {
-        URL(string: "https://mybookclub.app/club/\(clubId.uuidString)")
-            ?? URL(string: "https://mybookclub.app")!
+        // TODO: Once the app is on the App Store, replace with your App Store URL
+        URL(string: "https://samaralimads.github.io/mybookclub-legal")!
     }
 
     // MARK: - Apply club update (cache-bust cover + reload)
@@ -283,7 +287,7 @@ final class ClubDetailViewModel {
         var result = club
         if let url = club.coverImageURL {
             let base = url.components(separatedBy: "?").first ?? url
-            let timestamp = Int(Date().timeIntervalSince1970)
+            let timestamp = Int(Date.now.timeIntervalSince1970)
             result.coverImageURL = "\(base)?t=\(timestamp)"
         }
         return result
