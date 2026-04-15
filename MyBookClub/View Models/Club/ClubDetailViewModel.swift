@@ -269,8 +269,7 @@ final class ClubDetailViewModel {
     // MARK: - Club URL
 
     func shareURL(for clubId: UUID) -> URL {
-        // TODO: Once the app is on the App Store, replace with your App Store URL
-        URL(string: "https://samaralimads.github.io/mybookclub-legal")!
+        URL(string: "https://apps.apple.com/app/id6762190250")!
     }
 
     // MARK: - Apply club update (cache-bust cover + reload)
