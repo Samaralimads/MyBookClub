@@ -64,6 +64,6 @@ final class CitySearchService: NSObject, MKLocalSearchCompleterDelegate {
         let request = MKLocalSearch.Request(completion: completion)
         let search = MKLocalSearch(request: request)
         let response = try? await search.start()
-        return response?.mapItems.first?.location.coordinate
+        return response?.mapItems.first?.placemark.location?.coordinate
     }
 }
