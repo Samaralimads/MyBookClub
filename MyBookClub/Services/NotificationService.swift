@@ -35,6 +35,15 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         } catch {
             isAuthorized = false
         }
+
+        // Also register if already authorized (e.g. app update, token refresh)
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        if settings.authorizationStatus == .authorized {
+            isAuthorized = true
+            await MainActor.run {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
+        }
     }
 
     // MARK: - APNs token registration
