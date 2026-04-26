@@ -11,9 +11,8 @@ struct ClubBookTab: View {
     let club: Club
     let isMember: Bool
     let nextMeeting: Meeting?
+    var vm: ClubBookViewModel
     let onArchived: (() -> Void)?
-
-    @State private var vm = ClubBookViewModel()
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
@@ -37,7 +36,7 @@ struct ClubBookTab: View {
         }
         .onChange(of: club.currentBookId) { _, _ in
             Task {
-                let archived = await vm.load(club: club, isMember: isMember)
+                let archived = await vm.reload(club: club, isMember: isMember)
                 if archived { onArchived?() }
             }
         }

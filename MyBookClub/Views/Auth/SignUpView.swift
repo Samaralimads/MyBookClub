@@ -148,12 +148,21 @@ struct SignUpView: View {
                         .padding(.vertical, Spacing.lg)
                         
                         // Terms
-                        Text("By creating an account, you agree to our [Terms of Service](\(Config.termsURL)) and [Privacy Policy](\(Config.privacyPolicyURL)).")
-                            .font(.footnote)
-                            .foregroundStyle(.inkTertiary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Spacing.xl)
-                            .frame(maxWidth: .infinity)
+                        if let attributed = try? AttributedString(
+                            markdown: "By creating an account, you agree to our [Terms of Service](\(Config.termsURL)) and [Privacy Policy](\(Config.privacyPolicyURL))."
+                        ) {
+                            Text(attributed)
+                                .font(.footnote)
+                                .foregroundStyle(.inkTertiary)
+                                .tint(.accent)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, Spacing.xl)
+                                .frame(maxWidth: .infinity)
+                                .environment(\.openURL, OpenURLAction { url in
+                                    UIApplication.shared.open(url)
+                                    return .handled
+                                })
+                        }
                         
                         
                     }

@@ -94,7 +94,9 @@ final class CreateClubViewModel {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
         selectedGenre != nil &&
         !description.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !cityLabel.trimmingCharacters(in: .whitespaces).isEmpty
+        !cityLabel.trimmingCharacters(in: .whitespaces).isEmpty &&
+        resolvedLat != nil &&
+        resolvedLng != nil
     }
     
     // MARK: - Image Loading
@@ -122,13 +124,11 @@ final class CreateClubViewModel {
     // MARK: - Create
     
     func createClub(locationService: LocationService) async {
-        guard canCreate, let genre = selectedGenre else { return }
+        guard canCreate, let genre = selectedGenre,
+              let lat = resolvedLat, let lng = resolvedLng else { return }
         isLoading = true
         defer { isLoading = false }
         error = nil
-        
-        let lat = resolvedLat ?? locationService.roundedLatitude
-        let lng = resolvedLng ?? locationService.roundedLongitude
         
         do {
             var club = try await SupabaseService.shared.createClub(
@@ -160,13 +160,11 @@ final class CreateClubViewModel {
     
     func updateClub(locationService: LocationService) async {
         guard canCreate, let genre = selectedGenre,
-              let existing = mode.existingClub else { return }
+              let existing = mode.existingClub,
+              let lat = resolvedLat, let lng = resolvedLng else { return }
         isLoading = true
         defer { isLoading = false }
         error = nil
-        
-        let lat = resolvedLat ?? locationService.roundedLatitude
-        let lng = resolvedLng ?? locationService.roundedLongitude
         
         do {
             // Upload new cover if the user picked one

@@ -609,6 +609,8 @@ final class SupabaseService {
             .eq("club_id", value: clubId.uuidString)
             .eq("user_id", value: uid.uuidString)
             .eq("book_id", value: bookId.uuidString)
+            .order("updated_at", ascending: false)
+            .limit(1)
             .execute()
             .value
         return rows.first
@@ -630,7 +632,7 @@ final class SupabaseService {
             completed_chapters: completedChapters,
             updated_at: iso8601.string(from: .now)
         )
-        try await client.from("reading_progress").upsert(payload).execute()
+        try await client.from("reading_progress").upsert(payload, onConflict: "user_id,club_id,book_id").execute()
     }
     
     // MARK: - Posts (Board)

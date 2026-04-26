@@ -100,12 +100,15 @@ struct SettingsView: View {
 
     private var supportSection: some View {
         SettingsGroup(header: "Support") {
-            SettingsLinkRow(
+            SettingsRow(
                 icon: "questionmark.circle.fill",
                 iconBackground: Color(red: 0.3, green: 0.5, blue: 0.9),
-                title: "Help Centre",
-                url: URL(string: "https://mybookclub.app/help")!
-            )
+                title: "Help Centre"
+            ) {
+                if let url = URL(string: "mailto:\(Config.supportEmail)") {
+                    UIApplication.shared.open(url)
+                }
+            }
 
             SettingsDivider()
 

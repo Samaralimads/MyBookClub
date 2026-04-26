@@ -278,6 +278,8 @@ struct CreateClubView: View {
                         .foregroundStyle(.inkPrimary)
                         .onChange(of: vm.cityLabel) { _, newValue in
                             citySearch.query = newValue
+                            vm.resolvedLat = nil
+                            vm.resolvedLng = nil
                         }
                 }
                 .padding(.horizontal, Spacing.md)
@@ -349,6 +351,13 @@ struct CreateClubView: View {
                         .stroke(Color.border, lineWidth: 1)
                     }
                 }
+            }
+
+            if !vm.cityLabel.isEmpty && vm.resolvedLat == nil {
+                Text("Select a suggestion from the list to pin your club on the map.")
+                    .font(.appCaption)
+                    .foregroundStyle(.inkTertiary)
+                    .padding(.horizontal, Spacing.xs)
             }
         }
     }

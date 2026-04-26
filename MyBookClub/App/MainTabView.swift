@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .discover
-    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -40,11 +39,6 @@ struct MainTabView: View {
         .toolbarBackground(.visible, for: .tabBar)
         .task {
             await NotificationService.shared.requestPermission()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                selectedTab = .discover
-            }
         }
     }
 }

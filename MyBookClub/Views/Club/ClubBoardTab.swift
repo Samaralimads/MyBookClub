@@ -149,7 +149,9 @@ struct AnnouncementCard: View {
     
     @State private var commentText = ""
     @State private var spoilerRevealed = false
+    @State private var commentsExpanded = false
     
+    private let collapsedCommentLimit = 2
     private var commentCount: Int { post.comments?.count ?? 0 }
     private var isPinned: Bool { post.isPinned ?? false }
     
@@ -300,14 +302,43 @@ struct AnnouncementCard: View {
     private var commentsSection: some View {
         VStack(spacing: 0) {
             if let comments = post.comments, !comments.isEmpty {
+                let visibleComments = commentsExpanded ? comments : Array(comments.prefix(collapsedCommentLimit))
+                let hiddenCount = comments.count - collapsedCommentLimit
+
                 VStack(spacing: 0) {
-                    ForEach(comments) { comment in
+                    ForEach(visibleComments) { comment in
                         CommentRow(comment: comment)
-                        if comment.id != comments.last?.id {
+                        if comment.id != visibleComments.last?.id {
                             Divider()
                                 .background(Color.border)
                                 .padding(.leading, 52)
                         }
+                    }
+                }
+
+                if !commentsExpanded && hiddenCount > 0 {
+                    Divider().background(Color.border).padding(.leading, 52)
+                    Button {
+                        withAnimation(Animations.standard) { commentsExpanded = true }
+                    } label: {
+                        Text("View \(hiddenCount) more comment\(hiddenCount == 1 ? "" : "s")")
+                            .font(.appCaption.weight(.medium))
+                            .foregroundStyle(.accent)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                    }
+                } else if commentsExpanded && comments.count > collapsedCommentLimit {
+                    Divider().background(Color.border).padding(.leading, 52)
+                    Button {
+                        withAnimation(Animations.standard) { commentsExpanded = false }
+                    } label: {
+                        Text("Show less")
+                            .font(.appCaption.weight(.medium))
+                            .foregroundStyle(.inkTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
                     }
                 }
             }
@@ -448,11 +479,14 @@ struct ComposeAnnouncementSheet: View {
                         } else {
                             Text("Post")
                                 .font(.appBody.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, Spacing.md)
+                                .padding(.vertical, 6)
+                                .background(Color.accent)
+                                .clipShape(.rect(cornerRadius: CornerRadius.button))
                         }
                     }
                     .disabled(vm.newAnnouncementText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isSending)
-                    .buttonStyle(PrimaryButtonStyle())
-
                 }
             }
         }

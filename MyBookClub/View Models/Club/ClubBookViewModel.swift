@@ -14,6 +14,7 @@ final class ClubBookViewModel {
 
     private(set) var readingProgress: ReadingProgress?
     var error: AppError?
+    private var hasLoaded = false
 
     // MARK: - Load
 
@@ -22,6 +23,8 @@ final class ClubBookViewModel {
         if archived { return true }
         guard let book = club.currentBook else { return false }
         guard isMember else { return false }
+        guard !hasLoaded else { return false }
+        hasLoaded = true
         do {
             readingProgress = try await SupabaseService.shared.fetchReadingProgress(
                 clubId: club.id, bookId: book.id
@@ -30,6 +33,11 @@ final class ClubBookViewModel {
             self.error = AppError(underlying: error)
         }
         return false
+    }
+
+    func reload(club: Club, isMember: Bool) async -> Bool {
+        hasLoaded = false
+        return await load(club: club, isMember: isMember)
     }
 
     // MARK: - Toggle chapter completion

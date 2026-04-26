@@ -12,6 +12,7 @@ struct ClubDetailView: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var vm = ClubDetailViewModel()
+    @State private var bookVM = ClubBookViewModel()
     @State private var selectedTab: ClubTab = .about
     @State private var currentClub: Club
     @State private var showSettings = false
@@ -393,6 +394,7 @@ struct ClubDetailView: View {
             club: currentClub,
             isMember: vm.isMember,
             nextMeeting: vm.nextMeeting,
+            vm: bookVM,
             onArchived: {
                 Task { @MainActor in
                     if let fresh = await vm.reloadClub(clubId: club.id) {
