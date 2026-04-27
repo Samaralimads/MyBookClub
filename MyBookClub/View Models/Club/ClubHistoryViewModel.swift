@@ -16,6 +16,7 @@ final class ClubHistoryViewModel {
     private(set) var ratings: [UUID: BookRating] = [:]
     private(set) var isLoading = false
     var error: AppError?
+    var onFirstRatingSubmitted: (() -> Void)?
 
     // MARK: - Load
 
@@ -57,6 +58,7 @@ final class ClubHistoryViewModel {
             ratingCount: current?.ratingCount ?? 0
         )
         do {
+            let isFirstRating = ratings[bookId]?.myRating == nil
             try await SupabaseService.shared.upsertBookRating(
                 clubId: clubId,
                 bookId: bookId,
@@ -68,6 +70,9 @@ final class ClubHistoryViewModel {
                 bookId: bookId
             )
             ratings[bookId] = updated
+            if isFirstRating {
+                onFirstRatingSubmitted?()
+            }
         } catch {
             // Revert optimistic update on failure
             ratings[bookId] = current

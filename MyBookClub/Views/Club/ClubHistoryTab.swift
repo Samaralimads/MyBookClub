@@ -5,6 +5,7 @@
 //  Created by Samara Lima da Silva on 10/03/2026.
 //
 
+import StoreKit
 import SwiftUI
 
 struct ClubHistoryTab: View {
@@ -13,6 +14,9 @@ struct ClubHistoryTab: View {
     @State private var vm = ClubHistoryViewModel()
     @State private var currentIndex = 0
     @State private var dragOffset: CGFloat = 0
+
+    @Environment(\.requestReview) private var requestReview
+    @AppStorage("hasRequestedReview") private var hasRequestedReview = false
     
     var body: some View {
         Group {
@@ -33,7 +37,14 @@ struct ClubHistoryTab: View {
             }
         }
         .padding(.bottom, Spacing.xxl)
-        .task { await vm.load(club: club) }
+        .task {
+            await vm.load(club: club)
+            vm.onFirstRatingSubmitted = {
+                guard !hasRequestedReview else { return }
+                hasRequestedReview = true
+                requestReview()
+            }
+        }
     }
     
     // MARK: - Carousel

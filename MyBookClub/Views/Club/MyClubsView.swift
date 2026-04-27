@@ -25,8 +25,14 @@ struct MyClubsView: View {
                         .font(.appTitle)
                         .foregroundStyle(.inkPrimary)
                     Spacer()
-                    Button("", systemImage: "plus", action: { showCreate = true })
-                        .tint(.accent)
+                    Button(action: { showCreate = true }) {
+                        Image(systemName: "plus")
+                            .foregroundStyle(.white)
+                            .font(.system(size: 16, weight: .bold))
+                            .frame(width: 36, height: 36)
+                            .background(Color.accentColor)
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.horizontal, Spacing.lg)
                 .padding(.top, Spacing.md)
