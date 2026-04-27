@@ -14,6 +14,7 @@ import GoogleSignIn
 struct MyBookClubApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var authVM = AuthViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -25,6 +26,11 @@ struct MyBookClubApp: App {
                 .task {
                     await authVM.startListening()
                 }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                UNUserNotificationCenter.current().setBadgeCount(0)
+            }
         }
     }
 }
