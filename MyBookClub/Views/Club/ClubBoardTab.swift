@@ -150,6 +150,7 @@ struct AnnouncementCard: View {
     @State private var commentText = ""
     @State private var spoilerRevealed = false
     @State private var commentsExpanded = false
+    @State private var showAuthorProfile = false
     
     private let collapsedCommentLimit = 2
     private var commentCount: Int { post.comments?.count ?? 0 }
@@ -169,13 +170,33 @@ struct AnnouncementCard: View {
             RoundedRectangle(cornerRadius: CornerRadius.card)
                 .stroke(isPinned ? Color.accent.opacity(0.4) : Color.border, lineWidth: isPinned ? 1.5 : 1)
         }
+        .sheet(isPresented: $showAuthorProfile) {
+            if let userId = post.author?.id {
+                NavigationStack {
+                    MemberProfileView(userId: userId)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done") { showAuthorProfile = false }
+                                    .foregroundStyle(.accent)
+                            }
+                        }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
     }
     
     // MARK: - Header
     
     private var postHeader: some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
-            AvatarView(user: post.author, size: 36)
+            Button {
+                if post.author?.id != nil { showAuthorProfile = true }
+            } label: {
+                AvatarView(user: post.author, size: 36)
+            }
+            .buttonStyle(.plain)
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: Spacing.xs) {
@@ -392,10 +413,17 @@ struct AnnouncementCard: View {
 
 struct CommentRow: View {
     let comment: Post
-    
+
+    @State private var showAuthorProfile = false
+
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
-            AvatarView(user: comment.author, size: 28)
+            Button {
+                if comment.author?.id != nil { showAuthorProfile = true }
+            } label: {
+                AvatarView(user: comment.author, size: 28)
+            }
+            .buttonStyle(.plain)
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: Spacing.xs) {
@@ -418,6 +446,21 @@ struct CommentRow: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
+        .sheet(isPresented: $showAuthorProfile) {
+            if let userId = comment.author?.id {
+                NavigationStack {
+                    MemberProfileView(userId: userId)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done") { showAuthorProfile = false }
+                                    .foregroundStyle(.accent)
+                            }
+                        }
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
     }
 }
 

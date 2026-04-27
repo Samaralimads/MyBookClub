@@ -243,7 +243,7 @@ struct MeetingBannerView: View {
         rsvpStatus == .notGoing ? .inkSecondary : .white
     }
 
-    // MARK: - Calendar 
+    // MARK: - Calendar
 
     private func addToCalendar() async {
         let result = await CalendarService.shared.addMeeting(meeting)
@@ -303,12 +303,13 @@ struct RSVPListSheet: View {
     let notGoingCount: Int
 
     @Environment(\.dismiss) private var dismiss
+    @State private var path = NavigationPath()
 
     private var going: [RSVPMember]    { rsvpMembers.filter { $0.status == .going    } }
     private var notGoing: [RSVPMember] { rsvpMembers.filter { $0.status == .notGoing } }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
                 Color.background.ignoresSafeArea()
                 Group {
@@ -322,12 +323,12 @@ struct RSVPListSheet: View {
                         List {
                             if !going.isEmpty {
                                 Section("Going (\(goingCount))") {
-                                    ForEach(going) { RSVPMemberRow(member: $0) }
+                                    ForEach(going) { RSVPMemberRow(member: $0, path: $path) }
                                 }
                             }
                             if !notGoing.isEmpty {
                                 Section("Not Going (\(notGoingCount))") {
-                                    ForEach(notGoing) { RSVPMemberRow(member: $0) }
+                                    ForEach(notGoing) { RSVPMemberRow(member: $0, path: $path) }
                                 }
                             }
                         }
@@ -338,6 +339,9 @@ struct RSVPListSheet: View {
             }
             .navigationTitle(meetingTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: UUID.self) { userId in
+                MemberProfileView(userId: userId)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -350,15 +354,23 @@ struct RSVPListSheet: View {
 
 private struct RSVPMemberRow: View {
     let member: RSVPMember
+    @Binding var path: NavigationPath
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            AvatarView(urlString: member.avatarURL, size: 40)
+        Button {
+            path.append(member.userId)
+        } label: {
+            HStack(spacing: Spacing.md) {
+                AvatarView(urlString: member.avatarURL, size: 40)
 
-            Text(member.displayName)
-                .font(.appBody)
-                .foregroundStyle(.inkPrimary)
+                Text(member.displayName)
+                    .font(.appBody)
+                    .foregroundStyle(.inkPrimary)
+
+                Spacer()
+            }
         }
+        .buttonStyle(.plain)
         .listRowBackground(Color.cardBackground)
     }
 }

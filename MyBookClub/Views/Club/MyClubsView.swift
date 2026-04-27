@@ -100,6 +100,9 @@ struct MyClubsView: View {
         .navigationDestination(for: Club.self) { club in
             ClubDetailView(club: club)
         }
+        .navigationDestination(for: UUID.self) { userId in
+            MemberProfileView(userId: userId)
+        }
     }
     
     // MARK: - Data
@@ -137,5 +140,3 @@ struct MyClubsView: View {
         MyClubsView()
     }
 }
-
-
