@@ -20,17 +20,27 @@ final class OnboardingViewModel {
     var error: AppError?
     var locationService = LocationService()
 
+    // Manual city selection
+    var citySearch = CitySearchService()
+    var resolvedCoordinate: CLLocationCoordinate2D?
+    var resolvedCityLabel: String?
+
     enum OnboardingStep: Int, CaseIterable {
         case genres      = 0
         case readingFreq = 1
         case location    = 2
     }
 
+    var locationGranted: Bool {
+        locationService.authorizationStatus == .authorizedWhenInUse
+            || locationService.authorizationStatus == .authorizedAlways
+    }
+
     var canAdvance: Bool {
         switch currentStep {
         case .genres:      return !selectedGenres.isEmpty
         case .readingFreq: return true
-        case .location:    return true
+        case .location:    return locationGranted || resolvedCoordinate != nil
         }
     }
 
@@ -53,6 +63,18 @@ final class OnboardingViewModel {
         locationService.requestWhenInUse()
     }
 
+    func selectCity(_ index: Int) async {
+        guard index < citySearch.completionResults.count else { return }
+        let result = citySearch.completionResults[index]
+        let label = citySearch.suggestions[index]
+        if let coord = await citySearch.geocode(result) {
+            resolvedCoordinate = coord
+            resolvedCityLabel = label
+            citySearch.query = label
+            citySearch.suggestions = []
+        }
+    }
+
     func completeOnboarding(authViewModel: AuthViewModel) async {
         isLoading = true
         defer { isLoading = false }
@@ -71,7 +93,7 @@ final class OnboardingViewModel {
                 avatarURL: nil,
                 genrePrefs: Array(selectedGenres),
                 currentlyReadingBookId: nil,
-                city: nil,
+                city: resolvedCityLabel,
                 readingFreq: readingFreq,
                 apnsToken: nil,
                 createdAt: .now

@@ -17,9 +17,15 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     var currentLocation: CLLocation?
     var errorMessage: String?
 
-    // Default to Paris (MyBookClub HQ / seed city) if location unavailable
-    var coordinate: CLLocationCoordinate2D {
-        currentLocation?.coordinate ?? CLLocationCoordinate2D(latitude: 48.85, longitude: 2.35)
+    /// Set by the user via manual city search when GPS is unavailable.
+    private var manualCoordinate: CLLocationCoordinate2D?
+
+    var coordinate: CLLocationCoordinate2D? {
+        currentLocation?.coordinate ?? manualCoordinate
+    }
+
+    func setManualCoordinate(_ coord: CLLocationCoordinate2D) {
+        manualCoordinate = coord
     }
 
     override init() {
@@ -43,12 +49,14 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     // MARK: - GDPR: round coordinates to 2 decimal places (~1km precision)
 
-    var roundedLatitude: Double {
-        (coordinate.latitude * 100).rounded() / 100
+    var roundedLatitude: Double? {
+        guard let coord = coordinate else { return nil }
+        return (coord.latitude * 100).rounded() / 100
     }
 
-    var roundedLongitude: Double {
-        (coordinate.longitude * 100).rounded() / 100
+    var roundedLongitude: Double? {
+        guard let coord = coordinate else { return nil }
+        return (coord.longitude * 100).rounded() / 100
     }
 
     // MARK: - CLLocationManagerDelegate

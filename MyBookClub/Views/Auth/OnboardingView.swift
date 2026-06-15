@@ -160,25 +160,25 @@ private struct ReadingFreqStep: View {
 
 private struct LocationStep: View {
     @Bindable var vm: OnboardingViewModel
-    private var granted: Bool {
-        vm.locationService.authorizationStatus == .authorizedWhenInUse
-            || vm.locationService.authorizationStatus == .authorizedAlways
-    }
+
     var body: some View {
         VStack(spacing: Spacing.xl) {
             Spacer()
+
             ZStack {
                 Circle().fill(Color.accentSubtle).frame(width: 100, height: 100)
-                Image(systemName: granted ? "location.fill" : "location.circle")
+                Image(systemName: vm.locationGranted ? "location.fill" : "location.circle")
                     .font(.system(size: 44)).foregroundStyle(.accent)
             }
+
             VStack(spacing: Spacing.sm) {
                 Text("Find clubs near you")
                     .font(.appTitle).foregroundStyle(.inkPrimary).multilineTextAlignment(.center)
-                Text("We use city-level location only to show you nearby clubs.")
+                Text("Enable location or enter your city — we only use city-level precision.")
                     .font(.appBody).foregroundStyle(.inkSecondary).multilineTextAlignment(.center)
             }
-            if granted {
+
+            if vm.locationGranted {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
                     Text("Location enabled").font(.appBody).foregroundStyle(.inkPrimary)
@@ -187,11 +187,26 @@ private struct LocationStep: View {
                 .background(Color.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
             } else {
-                Button { vm.requestLocation() } label: {
-                    Label("Enable Location", systemImage: "location.fill")
+                VStack(spacing: Spacing.md) {
+                    // Primary CTA — filled button
+                    Button { vm.requestLocation() } label: {
+                        Label("Enable location", systemImage: "location.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    // Divider
+                    HStack(spacing: Spacing.md) {
+                        Rectangle().fill(Color.border).frame(height: 1)
+                        Text("or").font(.appCaption).foregroundStyle(.inkTertiary)
+                        Rectangle().fill(Color.border).frame(height: 1)
+                    }
+
+                    // City search
+                    CitySearchField(vm: vm)
                 }
-                .buttonStyle(SecondaryButtonStyle())
             }
+
             Spacer()
         }
         .padding(.horizontal, Spacing.xl)
@@ -199,6 +214,94 @@ private struct LocationStep: View {
     }
 }
 
+// MARK: - City Search Field
+
+private struct CitySearchField: View {
+    @Bindable var vm: OnboardingViewModel
+
+    var body: some View {
+        VStack(spacing: Spacing.sm) {
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.inkTertiary)
+                    .font(.system(size: 16))
+
+                TextField("City — Paris, London, New York…", text: $vm.citySearch.query)
+                    .font(.appBody)
+                    .foregroundStyle(.inkPrimary)
+                    .autocorrectionDisabled()
+                    .onChange(of: vm.citySearch.query) { _, newValue in
+                        // Clear resolved coordinate if user edits the field manually
+                        if newValue != vm.resolvedCityLabel {
+                            vm.resolvedCoordinate = nil
+                            vm.resolvedCityLabel = nil
+                        }
+                    }
+
+                if !vm.citySearch.query.isEmpty {
+                    Button {
+                        vm.citySearch.query = ""
+                        vm.resolvedCoordinate = nil
+                        vm.resolvedCityLabel = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.inkTertiary)
+                    }
+                }
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.md)
+            .background(Color.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.button))
+            .overlay {
+                RoundedRectangle(cornerRadius: CornerRadius.button)
+                    .stroke(
+                        vm.resolvedCoordinate != nil ? Color.accentColor : Color.border,
+                        lineWidth: vm.resolvedCoordinate != nil ? 1.5 : 1
+                    )
+            }
+
+            if vm.resolvedCoordinate != nil {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("City set").font(.appCaption).foregroundStyle(.inkSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, Spacing.sm)
+            } else if !vm.citySearch.suggestions.isEmpty {
+                VStack(spacing: 2) {
+                    ForEach(Array(vm.citySearch.suggestions.enumerated()), id: \.offset) { idx, suggestion in
+                        Button {
+                            Task { await vm.selectCity(idx) }
+                        } label: {
+                            HStack(spacing: Spacing.md) {
+                                Image(systemName: "mappin")
+                                    .foregroundStyle(.inkTertiary)
+                                    .font(.system(size: 14))
+                                Text(suggestion)
+                                    .font(.appCaption)
+                                    .foregroundStyle(.inkPrimary)
+                                    .multilineTextAlignment(.leading)
+                                Spacer()
+                            }
+                            .padding(.horizontal, Spacing.md)
+                            .padding(.vertical, Spacing.sm)
+                        }
+                        if idx < vm.citySearch.suggestions.count - 1 {
+                            Divider().padding(.horizontal, Spacing.md)
+                        }
+                    }
+                }
+                .background(Color.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+                .overlay {
+                    RoundedRectangle(cornerRadius: CornerRadius.card)
+                        .stroke(Color.border, lineWidth: 1)
+                }
+            }
+        }
+    }
+}
 
 #Preview {
     OnboardingView().environment(AuthViewModel())
