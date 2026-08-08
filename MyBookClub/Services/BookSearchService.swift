@@ -10,6 +10,7 @@ import Foundation
 enum BookSearchField: String, CaseIterable {
     case title  = "Title"
     case author = "Author"
+    case isbn   = "ISBN"
 }
 
 @Observable
@@ -23,9 +24,22 @@ final class BookSearchService {
 
     func search(query: String, field: BookSearchField) async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count >= 3 else {
-            results = []
-            return
+
+        let effectiveQuery: String
+        switch field {
+        case .isbn:
+            let digits = trimmed.filter { $0.isNumber || $0 == "X" || $0 == "x" }
+            guard digits.count >= 10 else {
+                results = []
+                return
+            }
+            effectiveQuery = digits
+        case .title, .author:
+            guard trimmed.count >= 3 else {
+                results = []
+                return
+            }
+            effectiveQuery = trimmed
         }
 
         isLoading = true
@@ -33,7 +47,7 @@ final class BookSearchService {
         error = nil
 
         do {
-            results = try await fetchBooks(query: trimmed, field: field)
+            results = try await fetchBooks(query: effectiveQuery, field: field)
         } catch {
             if (error as NSError).code == NSURLErrorCancelled { return }
             self.error = AppError(underlying: error)
@@ -65,22 +79,22 @@ final class BookSearchService {
             if seen.insert(key).inserted { merged.append(book) }
         }
 
-        let queryLower = query.lowercased()
-        let queryWords = queryLower.split(separator: " ").map(String.init)
+        let queryNormalized = normalize(query)
+        let queryWords = queryNormalized.split(separator: " ").map(String.init)
 
         merged.sort {
-            let lScore = relevanceScore(book: $0, query: queryLower, words: queryWords, field: field)
-            let rScore = relevanceScore(book: $1, query: queryLower, words: queryWords, field: field)
+            let lScore = relevanceScore(book: $0, query: queryNormalized, words: queryWords, field: field)
+            let rScore = relevanceScore(book: $1, query: queryNormalized, words: queryWords, field: field)
             if lScore != rScore { return lScore < rScore }
             return $0.title < $1.title
         }
 
         return merged.filter { book in
-            //must have a cover
-            guard book.coverURL != nil else { return false }
+            // ISBN queries are already exact matches at the API level
+            guard field != .isbn else { return true }
 
-            let titleWords = book.title.lowercased().components(separatedBy: .whitespacesAndNewlines)
-            let authorWords = book.author.lowercased().components(separatedBy: .whitespacesAndNewlines)
+            let titleWords = normalize(book.title).components(separatedBy: .whitespacesAndNewlines)
+            let authorWords = normalize(book.author).components(separatedBy: .whitespacesAndNewlines)
 
             let significantWords = queryWords.filter { $0.count > 2 }
 
@@ -91,21 +105,32 @@ final class BookSearchService {
 
             guard !wordsToMatch.isEmpty else { return true }
 
-            let titleMatch = wordsToMatch.allSatisfy { qWord in
+            // Allow one non-matching word on longer queries to tolerate typos/extra words
+            let requiredMatches = wordsToMatch.count <= 2 ? wordsToMatch.count : wordsToMatch.count - 1
+
+            let titleMatches = wordsToMatch.filter { qWord in
                 titleWords.contains(where: { $0.hasPrefix(qWord) || $0.contains(qWord) })
-            }
-            let authorMatch = wordsToMatch.allSatisfy { qWord in
+            }.count
+            let authorMatches = wordsToMatch.filter { qWord in
                 authorWords.contains(where: { $0.hasPrefix(qWord) || $0.contains(qWord) })
-            }
-            return titleMatch || authorMatch
+            }.count
+
+            return titleMatches >= requiredMatches || authorMatches >= requiredMatches
         }
     }
 
+    /// Case- and diacritic-insensitive, punctuation-stripped comparison key.
+    private func normalize(_ text: String) -> String {
+        text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .components(separatedBy: .punctuationCharacters)
+            .joined()
+    }
 
     private func relevanceScore(book: Book, query: String, words: [String], field: BookSearchField) -> Int {
         let target = field == .author
-            ? book.author.lowercased()
-            : book.title.lowercased()
+            ? normalize(book.author)
+            : normalize(book.title)
 
         if target == query { return 0 }
         if target.hasPrefix(query) { return 1 }
@@ -121,7 +146,12 @@ final class BookSearchService {
             return []
         }
 
-        let param = field == .author ? "author" : "title"
+        let param: String
+        switch field {
+        case .author: param = "author"
+        case .title:  param = "title"
+        case .isbn:   param = "isbn"
+        }
         let urlString = "https://openlibrary.org/search.json?\(param)=\(encoded)&fields=key,title,author_name,isbn,cover_i,edition_count&limit=30"
 
         guard let url = URL(string: urlString) else { return [] }
@@ -165,7 +195,7 @@ final class BookSearchService {
     }
 
     // MARK: - Google Books (modern/recent titles)
-
+ 
     private func searchGoogleBooks(query: String, field: BookSearchField) async throws -> [Book] {
         let normalized = query
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
@@ -175,7 +205,12 @@ final class BookSearchService {
             return []
         }
 
-        let fieldPrefix = field == .author ? "inauthor" : "intitle"
+        let fieldPrefix: String
+        switch field {
+        case .author: fieldPrefix = "inauthor"
+        case .title:  fieldPrefix = "intitle"
+        case .isbn:   fieldPrefix = "isbn"
+        }
 
         // Wrap multi-word queries in quotes so "J K Rowling" isn't split into separate terms
         let fieldQuery: String
