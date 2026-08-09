@@ -16,19 +16,24 @@ struct ClubCard: View {
         VStack(alignment: .leading, spacing: 0) {
 
             // Cover image
-            AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                Color.purpleTint
-                    .overlay {
-                        Image(systemName: "books.vertical.fill")
-                            .foregroundStyle(.accent)
-                            .font(.system(size: 36))
-                    }
+            // GeometryReader gives the image a concrete frame — a flexible
+            // (maxWidth: .infinity) frame lets an extreme-aspect-ratio image
+            // propagate an oversized ideal width up and blow out the whole layout.
+            GeometryReader { geo in
+                AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Color.purpleTint
+                        .overlay {
+                            Image(systemName: "books.vertical.fill")
+                                .foregroundStyle(.accent)
+                                .font(.system(size: 36))
+                        }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
             }
-            .frame(maxWidth: .infinity)
             .frame(height: 160)
-            .clipped()
             .overlay(alignment: .topTrailing) {
                 if pendingCount > 0 {
                     Text("\(pendingCount)")

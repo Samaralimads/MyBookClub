@@ -111,6 +111,18 @@ struct CreateClubView: View {
         } message: {
             Text("This will permanently delete the club and all its data. This cannot be undone.")
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { vm.pendingCropImage != nil },
+            set: { isPresented in if !isPresented { vm.cancelCrop() } }
+        )) {
+            if let pending = vm.pendingCropImage {
+                ImageCropView(
+                    image: pending,
+                    onCancel: { vm.cancelCrop() },
+                    onCrop: { cropped in vm.confirmCrop(cropped) }
+                )
+            }
+        }
     }
 
     // MARK: - Cover Image
@@ -125,24 +137,33 @@ struct CreateClubView: View {
             ) {
                 ZStack {
                     if let image = vm.coverImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 140)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
-                            .overlay(alignment: .bottomTrailing) { changeBadge }
+                        // GeometryReader: even a 3:1 crop at 140pt height has an
+                        // ideal width of 420pt — wider than the padded form column —
+                        // so a flexible frame would still blow out the layout.
+                        GeometryReader { geo in
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geo.size.width, height: geo.size.height)
+                                .clipped()
+                        }
+                        .frame(height: 140)
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
+                        .overlay(alignment: .bottomTrailing) { changeBadge }
                     } else if let urlString = vm.existingCoverURL,
                               let url = URL(string: urlString) {
-                        AsyncImage(url: url) { image in
-                            image.resizable().scaledToFill()
-                        } placeholder: {
-                            Color.accentSubtle
+                        // GeometryReader: pre-crop-era covers may have extreme aspect
+                        // ratios that would blow out a flexible frame's width.
+                        GeometryReader { geo in
+                            AsyncImage(url: url) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                Color.accentSubtle
+                            }
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
                         }
-                        .frame(maxWidth: .infinity)
                         .frame(height: 140)
-                        .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.card))
                         .overlay(alignment: .bottomTrailing) { changeBadge }
                     } else {
