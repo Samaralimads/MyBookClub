@@ -49,7 +49,8 @@ final class CreateClubViewModel {
     var selectedPhotoItem: PhotosPickerItem? = nil {
         didSet { Task { await loadSelectedImage() } }
     }
-    var coverImage: UIImage? = nil
+    var pendingCropImage: UIImage? = nil   // picked photo awaiting crop confirmation
+    var coverImage: UIImage? = nil         // final, cropped 3:1 image ready for upload
     var existingCoverURL: String? = nil
     
     // MARK: - State
@@ -105,9 +106,22 @@ final class CreateClubViewModel {
     private func loadSelectedImage() async {
         guard let item = selectedPhotoItem else { return }
         if let data = try? await item.loadTransferable(type: Data.self),
-           let image = UIImage(data: data) {
-            coverImage = image
+           let rawImage = UIImage(data: data) {
+            // Normalize orientation up front: ImageCropView's pixel-space crop math
+            // assumes cgImage pixels are already upright.
+            pendingCropImage = rawImage.normalizedForUpload()
         }
+    }
+
+    func confirmCrop(_ croppedImage: UIImage) {
+        coverImage = croppedImage
+        pendingCropImage = nil
+        selectedPhotoItem = nil
+    }
+
+    func cancelCrop() {
+        pendingCropImage = nil
+        selectedPhotoItem = nil
     }
     
     // MARK: - City Selection

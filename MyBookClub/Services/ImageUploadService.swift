@@ -87,7 +87,7 @@ final class ImageUploadService {
 
 // MARK: - UIImage + Normalization
 
-private extension UIImage {
+extension UIImage {
     func normalizedForUpload() -> UIImage {
         guard size.width > 0, size.height > 0 else { return self }
         // If already upright and fully decoded, skip the redraw.

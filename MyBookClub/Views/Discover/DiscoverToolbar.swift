@@ -162,7 +162,7 @@ struct DiscoverFilterChips: View {
             }
         } label: {
             FilterDropdownChip(
-                label: vm.radiusKm.map { DistanceFormatter.string(fromMeters: $0 * 1_000) } ?? "Distance",
+                label: vm.radiusKm.map { DistanceFormatter.string(fromMeters: $0 * 1_000) } ?? "Any Distance",
                 isActive: vm.radiusKm != nil
             )
             .frame(maxWidth: .infinity)

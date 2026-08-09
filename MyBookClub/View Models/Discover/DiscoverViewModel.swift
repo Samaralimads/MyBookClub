@@ -65,11 +65,8 @@ final class DiscoverViewModel {
         error = nil
 
         do {
-            // Use 50km radius if GPS is granted or a manual city coordinate is set.
-            // Fall back to world-scale only if we have no location at all (banner scenario).
-            let hasLocation = locationGranted || locationService.coordinate != nil
-            let listRadiusM = hasLocation ? (radiusKm ?? 50.0) * 1_000 : 20_000_000.0
             let mapRadiusM  = 20_000_000.0
+            let listRadiusM = radiusKm.map { $0 * 1_000 } ?? mapRadiusM
 
             // Use stored coordinate if available; fall back to 0,0 only when world-scale is active anyway
             let lat = locationService.roundedLatitude ?? 0.0

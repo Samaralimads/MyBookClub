@@ -159,17 +159,24 @@ struct ClubDetailView: View {
     // MARK: - Hero
     
     private var heroHeader: some View {
-        AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }) { image in
-            image.resizable().scaledToFill()
-        } placeholder: {
-            LinearGradient(
-                colors: [Color.accent.opacity(0.7), Color.accent.opacity(0.35)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+        // GeometryReader gives the image a concrete frame — a flexible
+        // (maxWidth: .infinity) frame lets an extreme-aspect-ratio image
+        // propagate an oversized ideal width up and push the whole page
+        // wider than the screen.
+        GeometryReader { geo in
+            AsyncImage(url: currentClub.coverImageURL.flatMap { URL(string: $0) }) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                LinearGradient(
+                    colors: [Color.accent.opacity(0.7), Color.accent.opacity(0.35)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
         }
-        .frame(maxWidth: .infinity, minHeight: 260)
-        .clipped()
+        .frame(height: 260)
         .overlay(alignment: .top) {
             customToolbar
                 .padding(.top, 44) // status bar height

@@ -14,6 +14,7 @@ struct BookSearchSheet: View {
     @State private var searchService = BookSearchService()
     @State private var query = ""
     @State private var searchField: BookSearchField = .title
+    @State private var showScanner = false
 
     var body: some View {
         NavigationStack {
@@ -37,16 +38,60 @@ struct BookSearchSheet: View {
                     Button("Cancel") { dismiss() }
                         .foregroundStyle(.accent)
                 }
+                if ISBNScannerView.isDeviceCapable {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showScanner = true
+                        } label: {
+                            Image(systemName: "barcode.viewfinder")
+                        }
+                        .accessibilityLabel("Scan ISBN barcode")
+                    }
+                }
             }
             .searchable(
                 text: $query,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: searchField == .title ? "Search by title" : "Search by author"
+                prompt: searchPrompt
             )
         }
         .task(id: query + searchField.rawValue) {
             try? await Task.sleep(for: .milliseconds(350))
             await searchService.search(query: query, field: searchField)
+        }
+        .fullScreenCover(isPresented: $showScanner) {
+            ISBNScannerView { scannedCode in
+                searchField = .isbn
+                query = scannedCode
+            }
+        }
+    }
+
+    // MARK: - Search field helpers
+
+    private var searchPrompt: String {
+        switch searchField {
+        case .title:  return "Search by title"
+        case .author: return "Search by author"
+        case .isbn:   return "Search by ISBN"
+        }
+    }
+
+    private var isQueryTooShort: Bool {
+        switch searchField {
+        case .isbn:
+            let digits = query.filter { $0.isNumber || $0 == "X" || $0 == "x" }
+            return digits.count < 10
+        case .title, .author:
+            return query.count < 3
+        }
+    }
+
+    private var emptyQueryHint: String {
+        switch searchField {
+        case .title:  return "Type a book title above"
+        case .author: return "Type an author name above"
+        case .isbn:   return "Type or paste an ISBN above"
         }
     }
 
@@ -61,17 +106,17 @@ struct BookSearchSheet: View {
             ContentUnavailableView(
                 "Search for a book",
                 systemImage: "magnifyingglass",
-                description: Text(
-                    searchField == .title
-                        ? "Type a book title above"
-                        : "Type an author name above"
-                )
+                description: Text(emptyQueryHint)
             )
-        } else if query.count < 3 {
+        } else if isQueryTooShort {
             ContentUnavailableView(
                 "Keep typing…",
                 systemImage: "magnifyingglass",
-                description: Text("Enter at least 3 characters to search")
+                description: Text(
+                    searchField == .isbn
+                        ? "Enter a 10 or 13-digit ISBN"
+                        : "Enter at least 3 characters to search"
+                )
             )
         } else if searchService.results.isEmpty {
             ContentUnavailableView.search(text: query)

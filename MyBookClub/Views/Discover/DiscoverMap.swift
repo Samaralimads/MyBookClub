@@ -66,13 +66,52 @@ struct MapClubBottomCard: View {
     let userRole: MemberRole?
 
     var body: some View {
-        ClubCard(club: club, userRole: userRole)
-            .overlay(alignment: .bottomTrailing) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.inkSecondary)
-                    .padding(Spacing.md)
+        HStack(spacing: Spacing.md) {
+            AsyncImage(url: club.coverImageURL.flatMap { URL(string: $0) }) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Color.purpleTint
+                    .overlay {
+                        Image(systemName: "books.vertical.fill")
+                            .foregroundStyle(.accent)
+                            .font(.system(size: 20))
+                    }
             }
+            .frame(width: 64, height: 64)
+            .clipShape(.rect(cornerRadius: CornerRadius.avatar))
+
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(club.name)
+                    .font(.appBody.weight(.semibold))
+                    .foregroundStyle(.inkPrimary)
+                    .lineLimit(1)
+
+                if let firstGenre = club.genreTags.first,
+                   let genre = Genre(rawValue: firstGenre) {
+                    Text(genre.label)
+                        .font(.appCaption.weight(.semibold))
+                        .foregroundStyle(.accent)
+                }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 11))
+                    Text("\(club.memberCount ?? 0)")
+                        .font(.appCaption)
+                }
+                .foregroundStyle(.inkSecondary)
+            }
+
+            Spacer(minLength: Spacing.sm)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.inkSecondary)
+        }
+        .padding(Spacing.md)
+        .background(Color.cardBackground)
+        .clipShape(.rect(cornerRadius: CornerRadius.card))
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
