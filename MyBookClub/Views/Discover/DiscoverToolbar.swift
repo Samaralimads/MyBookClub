@@ -147,7 +147,7 @@ struct DiscoverFilterChips: View {
                 Task { await vm.loadClubs() }
             }
             Divider()
-            ForEach([1.0, 2.0, 5.0, 10.0], id: \.self) { km in
+            ForEach([1.0, 5.0, 10.0, 15.0], id: \.self) { km in
                 Button {
                     vm.radiusKm = km
                     Task { await vm.loadClubs() }

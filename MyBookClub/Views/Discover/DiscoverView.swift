@@ -30,7 +30,7 @@ struct DiscoverView: View {
 
                 Group {
                     if vm.showMap {
-                        DiscoverMap(clubs: vm.allClubs, userRole: vm.role(for:))
+                        DiscoverMap(clubs: vm.allClubs, userRole: vm.role(for:), userCoordinate: vm.locationService.coordinate)
                             .transition(.opacity)
                     } else {
                         discoverList

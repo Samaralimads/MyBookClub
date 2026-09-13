@@ -80,6 +80,9 @@ struct CreateClubView: View {
                 .padding(.top, Spacing.lg)
             }
             .scrollIndicators(.hidden)
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
 
             if vm.isLoading || vm.isDeleting { LoadingOverlay() }
         }
@@ -99,10 +102,9 @@ struct CreateClubView: View {
         } message: {
             Text("\"\(vm.createdClub?.name ?? "")\" is now live. Start inviting members and pick your first book.")
         }
-        .confirmationDialog(
+        .alert(
             "Delete \"\(vm.mode.existingClub?.name ?? "this club")\"?",
-            isPresented: $vm.showDeleteConfirm,
-            titleVisibility: .visible
+            isPresented: $vm.showDeleteConfirm
         ) {
             Button("Delete Club", role: .destructive) {
                 Task { await handleDelete() }
@@ -299,8 +301,7 @@ struct CreateClubView: View {
                         .foregroundStyle(.inkPrimary)
                         .onChange(of: vm.cityLabel) { _, newValue in
                             citySearch.query = newValue
-                            vm.resolvedLat = nil
-                            vm.resolvedLng = nil
+                            vm.cityLabelDidChange()
                         }
                 }
                 .padding(.horizontal, Spacing.md)

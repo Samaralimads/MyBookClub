@@ -188,7 +188,7 @@ struct ClubDetailView: View {
     private var clubInfo: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if let firstGenre = currentClub.genreTags.first,
-               let genre = Genre(rawValue: firstGenre) {
+               let genre = Genre(legacyRawValue: firstGenre) {
                 Text(genre.label.uppercased())
                     .font(.appCaption.weight(.bold))
                     .foregroundStyle(.accent)
