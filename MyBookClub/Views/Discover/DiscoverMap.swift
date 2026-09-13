@@ -11,14 +11,24 @@ import MapKit
 struct DiscoverMap: View {
     let clubs: [Club]
     let userRole: (Club) -> MemberRole?
+    let userCoordinate: CLLocationCoordinate2D?
 
-    @State private var position: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 48.865, longitude: 2.350),
-            span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-        )
-    )
+    @State private var position: MapCameraPosition
     @State private var selectedClub: Club?
+    @State private var hasCenteredOnUser: Bool
+
+    init(clubs: [Club], userRole: @escaping (Club) -> MemberRole?, userCoordinate: CLLocationCoordinate2D?) {
+        self.clubs = clubs
+        self.userRole = userRole
+        self.userCoordinate = userCoordinate
+
+        // Fall back to Paris only until the user's real location resolves.
+        let center = userCoordinate ?? CLLocationCoordinate2D(latitude: 48.865, longitude: 2.350)
+        _position = State(initialValue: .region(
+            MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
+        ))
+        _hasCenteredOnUser = State(initialValue: userCoordinate != nil)
+    }
 
     var body: some View {
         if clubs.isEmpty {
@@ -55,6 +65,15 @@ struct DiscoverMap: View {
                 }
             }
             .animation(Animations.standard, value: selectedClub)
+            .onChange(of: userCoordinate?.latitude) { _, _ in
+                guard !hasCenteredOnUser, let newValue = userCoordinate else { return }
+                hasCenteredOnUser = true
+                withAnimation {
+                    position = .region(
+                        MKCoordinateRegion(center: newValue, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
+                    )
+                }
+            }
         }
     }
 }
@@ -87,7 +106,7 @@ struct MapClubBottomCard: View {
                     .lineLimit(1)
 
                 if let firstGenre = club.genreTags.first,
-                   let genre = Genre(rawValue: firstGenre) {
+                   let genre = Genre(legacyRawValue: firstGenre) {
                     Text(genre.label)
                         .font(.appCaption.weight(.semibold))
                         .foregroundStyle(.accent)
@@ -117,6 +136,6 @@ struct MapClubBottomCard: View {
 
 #Preview {
     NavigationStack {
-        DiscoverMap(clubs: [], userRole: { _ in nil })
+        DiscoverMap(clubs: [], userRole: { _ in nil }, userCoordinate: nil)
     }
 }

@@ -71,7 +71,7 @@ struct ClubCard: View {
 
                 // Row 2: Genre
                 if let firstGenre = club.genreTags.first,
-                   let genre = Genre(rawValue: firstGenre) {
+                   let genre = Genre(legacyRawValue: firstGenre) {
                     Text(genre.label)
                         .font(.appCaption.weight(.semibold))
                         .foregroundStyle(.accent)

@@ -37,10 +37,9 @@ struct SettingsView: View {
         } message: {
             Text(vm.error?.message ?? "")
         }
-        .confirmationDialog(
+        .alert(
             "Delete your account?",
-            isPresented: $vm.showDeleteConfirm,
-            titleVisibility: .visible
+            isPresented: $vm.showDeleteConfirm
         ) {
             Button("Delete Account", role: .destructive) {
                 Task { await vm.deleteAccount(authViewModel: authVM) }

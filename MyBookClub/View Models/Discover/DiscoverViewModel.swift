@@ -23,7 +23,17 @@ final class DiscoverViewModel {
     // Filters (list only)
     var searchText = ""
     var selectedGenres: Set<String> = []
-    var radiusKm: Double? = nil
+
+    private static let radiusKmDefaultsKey = "discover.radiusKm"
+    var radiusKm: Double? = UserDefaults.standard.object(forKey: DiscoverViewModel.radiusKmDefaultsKey) as? Double {
+        didSet {
+            if let radiusKm {
+                UserDefaults.standard.set(radiusKm, forKey: DiscoverViewModel.radiusKmDefaultsKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: DiscoverViewModel.radiusKmDefaultsKey)
+            }
+        }
+    }
 
     // View mode
     var showMap = false
@@ -31,6 +41,7 @@ final class DiscoverViewModel {
     // Location
     var locationService = LocationService()
     private var hasReloadedWithRealLocation = false
+    private var loadGeneration = 0
 
     // Location setup sheet
     var showLocationSheet = false
@@ -55,11 +66,16 @@ final class DiscoverViewModel {
     func initialLoad() async {
         if locationGranted {
             locationService.startUpdating()
+            for _ in 0..<20 where locationService.currentLocation == nil {
+                try? await Task.sleep(for: .milliseconds(150))
+            }
         }
         await loadClubs()
     }
 
     func loadClubs() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         isLoading = true
         defer { isLoading = false }
         error = nil
@@ -90,11 +106,13 @@ final class DiscoverViewModel {
             async let user     = SupabaseService.shared.fetchCurrentUser()
 
             let (fetched, allFetched, mine, fetchedUser) = try await (listFetch, mapFetch, myClubs, user)
-            clubs       = fetched
+            guard generation == loadGeneration else { return }
+            clubs       = fetched.sorted { ($0.distanceMeters ?? .infinity) < ($1.distanceMeters ?? .infinity) }
             allClubs    = allFetched
             myClubIds   = Set(mine.map(\.id))
             currentUser = fetchedUser
         } catch {
+            guard generation == loadGeneration else { return }
             self.error = AppError(underlying: error)
         }
     }

@@ -44,6 +44,8 @@ final class CreateClubViewModel {
     // Coordinates resolved from the city autocomplete selection
     var resolvedLat: Double? = nil
     var resolvedLng: Double? = nil
+
+    private(set) var geocodedCityLabel: String? = nil
     
     // Cover image
     var selectedPhotoItem: PhotosPickerItem? = nil {
@@ -79,9 +81,27 @@ final class CreateClubViewModel {
         existingCoverURL = club.coverImageURL
         resolvedLat      = club.lat
         resolvedLng      = club.lng
-        
+        geocodedCityLabel = club.cityLabel
+
         if let tag = club.genreTags.first {
-            selectedGenre = Genre(rawValue: tag)
+            selectedGenre = Genre(legacyRawValue: tag)
+        }
+
+        // Older clubs may predate coordinate geocoding; resolve them in the
+        // background so Save isn't blocked on a field the user never touches.
+        if club.lat == nil || club.lng == nil {
+            geocodeMissingCoordinate(for: club.cityLabel)
+        }
+    }
+
+    private func geocodeMissingCoordinate(for cityLabel: String) {
+        guard !cityLabel.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Task {
+            if let placemark = try? await CLGeocoder().geocodeAddressString(cityLabel).first,
+               let coord = placemark.location?.coordinate {
+                resolvedLat = coord.latitude
+                resolvedLng = coord.longitude
+            }
         }
     }
     
@@ -125,14 +145,27 @@ final class CreateClubViewModel {
     }
     
     // MARK: - City Selection
-    
+
     func selectSuggestion(_ completion: MKLocalSearchCompletion, citySearch: CitySearchService) {
         Task {
             if let coord = await citySearch.geocode(completion) {
                 resolvedLat = coord.latitude
                 resolvedLng = coord.longitude
+                geocodedCityLabel = cityLabel
             }
         }
+    }
+
+    // Called when the city text field changes; clears the resolved coordinates
+    // only if the text no longer matches what they were geocoded for. Compares
+    // trimmed/lowercased so iOS re-normalizing the field on defocus (e.g. right
+    // as Save is tapped) doesn't spuriously invalidate an already-resolved city.
+    func cityLabelDidChange() {
+        let current  = cityLabel.trimmingCharacters(in: .whitespaces).lowercased()
+        let geocoded = geocodedCityLabel?.trimmingCharacters(in: .whitespaces).lowercased()
+        guard current != geocoded else { return }
+        resolvedLat = nil
+        resolvedLng = nil
     }
     
     // MARK: - Create

@@ -22,7 +22,7 @@ enum Genre: String, CaseIterable, Codable {
     var label: String {
         switch self {
         case .literaryFiction:   return "Literary Fiction"
-        case .mysteryThriller:   return "Mystery & Thriller" 
+        case .mysteryThriller:   return "Mystery & Thriller"
         case .sciFiFantasy:      return "Sci-Fi & Fantasy"
         case .romance:           return "Romance"
         case .historicalFiction: return "Historical Fiction"
@@ -34,4 +34,25 @@ enum Genre: String, CaseIterable, Codable {
         }
     }
 
+}
+
+extension Genre {
+    // Raw values retired when mystery/thriller and sci-fi/fantasy were merged.
+    // Clubs/profiles saved before that change still carry these strings.
+    private static let legacyRawValues: [String: Genre] = [
+        "mystery":  .mysteryThriller,
+        "thriller": .mysteryThriller,
+        "sci-fi":   .sciFiFantasy,
+        "fantasy":  .sciFiFantasy,
+    ]
+
+    init?(legacyRawValue raw: String) {
+        if let match = Genre(rawValue: raw) {
+            self = match
+        } else if let legacy = Genre.legacyRawValues[raw] {
+            self = legacy
+        } else {
+            return nil
+        }
+    }
 }
